@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="A shared cursor canvas powered directly by PostgreSQL LISTEN and NOTIFY over pgquic."
+    />
+    <title>Shared cursors · pgquic</title>
+  </head>
+  <body>
+    <main id="canvas" aria-label="Shared cursor canvas">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="pgquic home"
+          ><span class="brand-mark">pg</span><span>quic</span></a
+        >
+        <div class="presence" aria-live="polite">
+          <span id="presence-faces" class="presence-faces"></span>
+          <strong id="presence-count">1 person</strong
+          ><span>on this canvas</span>
+        </div>
+        <button id="open-settings" class="settings-button" type="button">
+          <span id="connection-dot" class="connection-dot"></span>
+          <span id="connection-status">Connecting</span
+          ><span aria-hidden="true">⋯</span>
+        </button>
+      </header>
+
+      <section class="intro" aria-labelledby="title">
+        <p class="eyebrow">POSTGRESQL, LIVE IN YOUR BROWSER</p>
+        <h1 id="title">Move together.</h1>
+        <p>
+          Every pointer is a PostgreSQL notification, delivered over a
+          browser-native pgquic connection. Open this page in another window and
+          move your cursor.
+        </p>
+        <div class="flow" aria-label="How cursor updates travel">
+          <span>pointermove</span><i>→</i><span>pg_notify</span><i>→</i
+          ><span>LISTEN</span><i>→</i><span>everyone</span>
+        </div>
+      </section>
+
+      <div id="cursor-layer" class="cursor-layer" aria-hidden="true"></div>
+      <aside class="identity">
+        <span id="identity-swatch" class="identity-swatch"></span>
+        <label for="display-name">You are</label>
+        <input
+          id="display-name"
+          type="text"
+          maxlength="24"
+          autocomplete="off"
+          aria-label="Your display name"
+        />
+      </aside>
+      <p id="activity" class="activity" aria-live="polite">
+        Establishing a PostgreSQL connection…
+      </p>
+      <p class="technology">NO WEBSOCKET · NO APP SERVER · JUST POSTGRESQL</p>
+    </main>
+
+    <dialog id="settings-dialog">
+      <form id="settings-form">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">CONNECTION</p>
+            <h2>Canvas settings</h2>
+          </div>
+          <button
+            id="close-settings"
+            class="close-button"
+            type="button"
+            aria-label="Close settings"
+          >
+            ×
+          </button>
+        </div>
+        <label
+          >Gateway URL<input
+            id="gateway-url"
+            type="url"
+            value="https://localhost:4433/v1/session"
+            required
+        /></label>
+        <label
+          >JWT <small>optional unless enabled by the gateway</small
+          ><input id="jwt" type="password" autocomplete="off"
+        /></label>
+        <label
+          >Certificate SHA-256
+          <small>base64; optional when locally trusted</small
+          ><input id="certificate-hash" type="text" autocomplete="off"
+        /></label>
+        <p id="runtime-note" class="runtime-note"></p>
+        <button class="connect-button" type="submit">Reconnect</button>
+      </form>
+    </dialog>
+
+    <template id="cursor-template">
+      <div class="remote-cursor">
+        <svg viewBox="0 0 28 34" aria-hidden="true">
+          <path d="M2.5 2.5 24 17.2l-10.1 1.5-5.2 10.1z" />
+        </svg>
+        <span></span>
+      </div>
+    </template>
+    <script type="module" src="/src/cursors.ts"></script>
+  </body>
+</html>

@@ -8,6 +8,7 @@ const artifacts = [
   { file: "benchmark.html", title: /pgquic benchmark/i },
   { file: "pg-cron.html", title: /pg_cron control room/i },
   { file: "commerce.html", title: /live commerce/i },
+  { file: "cursors.html", title: /shared cursors/i },
 ];
 
 for (const artifact of artifacts) {
@@ -58,4 +59,16 @@ test("commerce demo exposes its live dashboard surface", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Inventory" })).toBeVisible();
   await expect(page.getByText("Waiting for table events")).toBeVisible();
+});
+
+test("shared cursor demo exposes its collaboration surface", async ({
+  page,
+}) => {
+  await page.goto(pathToFileURL(resolve("dist", "cursors.html")).href);
+  await expect(
+    page.getByRole("heading", { name: "Move together." }),
+  ).toBeVisible();
+  await expect(page.getByText("pg_notify", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Your display name")).toBeVisible();
+  await expect(page.locator("#open-settings")).toBeVisible();
 });

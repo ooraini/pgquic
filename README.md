@@ -25,6 +25,8 @@ Open [https://localhost:5173/pg-cron.html](https://localhost:5173/pg-cron.html) 
 
 Open [https://localhost:5173/commerce.html](https://localhost:5173/commerce.html) for the React live-commerce dashboard. UUID-backed orders, products, and customers each publish their row ID on a same-named channel from a database trigger. Three pg_cron jobs continuously create orders, advance fulfillment, and restock inventory; one dedicated listener connection fans those events out to React query hooks.
 
+Open [https://localhost:5173/cursors.html](https://localhost:5173/cursors.html) in two or more windows for the shared-cursor canvas. Each window keeps a PostgreSQL `LISTEN` connection open and publishes throttled pointer updates with `pg_notify`; presence heartbeats and stale-client expiry are handled entirely in the browser, with no WebSocket or application server.
+
 For portable versions of every demo, build after generating certificates:
 
 ```sh
@@ -34,6 +36,7 @@ npm run build -w examples/browser
 open examples/browser/dist/dashboard.html
 open examples/browser/dist/benchmark.html
 open examples/browser/dist/pg-cron.html
+open examples/browser/dist/cursors.html
 open examples/browser/dist/commerce.html
 ```
 
