@@ -1,0 +1,38 @@
+{
+  "name": "@pgquic/client",
+  "version": "0.1.0",
+  "description": "Browser-first node-postgres API over multiplexed WebTransport streams",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSES"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test --max-warnings 0"
+  },
+  "devDependencies": {
+    "buffer": "6.0.3",
+    "events": "3.3.0",
+    "pg": "8.23.0",
+    "pg-pool": "3.14.0",
+    "@types/node": "24.3.1",
+    "@types/pg": "8.15.5",
+    "@typescript-eslint/eslint-plugin": "8.43.0",
+    "@typescript-eslint/parser": "8.43.0",
+    "eslint": "9.35.0",
+    "tsup": "8.5.0",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}

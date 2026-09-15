@@ -1,0 +1,34 @@
+# Node and generated browser/package artifacts
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Local certificates and environment configuration
+certs/
+deploy/.env
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Go build/test output
+/gateway/pgquic-gateway
+*.test
+*.prof
+coverage.out
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*~
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/

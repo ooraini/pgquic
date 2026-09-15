@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>pgquic laboratory</title>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">WEBTRANSPORT × POSTGRESQL</p>
+        <h1>One session.<br /><em>Many connections.</em></h1>
+        <p class="lede">
+          A live browser-native node-postgres pool, tunneled over independent
+          QUIC streams.
+        </p>
+      </header>
+      <section id="environment" class="panel environment" aria-live="polite">
+        <h2>Runtime checks</h2>
+        <ul id="checks"></ul>
+      </section>
+      <details id="connection-settings" class="panel settings">
+        <summary>Connection settings</summary>
+        <div class="fields">
+          <label>
+            Gateway URL
+            <input
+              id="gateway-url"
+              type="url"
+              value="https://localhost:4433/v1/session"
+            />
+          </label>
+          <label>
+            JWT <small>optional unless enabled by the gateway</small>
+            <input
+              id="jwt"
+              type="password"
+              autocomplete="off"
+              placeholder="Optional control-stream token"
+            />
+          </label>
+          <label>
+            Certificate SHA-256
+            <small>base64, optional with a locally trusted certificate</small>
+            <input id="certificate-hash" type="text" autocomplete="off" />
+          </label>
+        </div>
+        <p class="hint">
+          Changing the URL or certificate hash takes effect after “Close &amp;
+          recreate pool.”
+        </p>
+      </details>
+      <section class="panel controls">
+        <button id="run">Run complete demonstration</button
+        ><button id="recreate">Close & recreate pool</button
+        ><span id="status">idle</span>
+      </section>
+      <section class="metrics">
+        <article>
+          <small>Session generation</small><strong id="generation">0</strong>
+        </article>
+        <article>
+          <small>WebTransport sessions</small><strong id="sessions">0</strong>
+        </article>
+        <article>
+          <small>Active PG streams</small><strong id="streams">0</strong>
+        </article>
+      </section>
+      <section class="panel">
+        <h2>Experiment log</h2>
+        <ol id="log"></ol>
+      </section>
+      <footer>
+        Development credentials only · browser_user@app · PostgreSQL
+        authorization still applies
+      </footer>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

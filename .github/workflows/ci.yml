@@ -1,0 +1,54 @@
+name: ci
+on: [push, pull_request]
+permissions: { contents: read }
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: gateway } }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with: { go-version: "1.25.x", cache-dependency-path: gateway/go.sum }
+      - run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - uses: golangci/golangci-lint-action@v8
+        with: { version: v2.4.0, working-directory: gateway }
+      - run: go test ./...
+      - run: go test -race ./...
+      - run: go build ./cmd/pgquic-gateway
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck -w packages/client
+      - run: npm run lint -w packages/client
+      - run: npm run test -w packages/client
+      - run: npm run build -w packages/client
+      - run: npm run typecheck -w examples/browser
+      - run: npm run build -w examples/browser
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test -w examples/browser
+      - run: sudo apt-get update && sudo apt-get install -y mkcert
+      - run: make cert
+      - run: docker compose -f deploy/docker-compose.yml up -d --build
+      - run: PGQUIC_E2E=1 npm run test -w examples/browser -- --project=chromium
+      - if: always()
+        run: docker compose -f deploy/docker-compose.yml logs --no-color
+      - if: always()
+        run: docker compose -f deploy/docker-compose.yml down -v
+  supply-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with: { go-version: "1.25.x" }
+      - uses: actions/setup-node@v5
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      - run: go install github.com/google/go-licenses@latest
+      - run: cd gateway && go-licenses check ./... --allowed_licenses=MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC
+      - run: docker compose -f deploy/docker-compose.yml config

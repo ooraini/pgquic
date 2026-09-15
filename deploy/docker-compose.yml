@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: development-admin-only
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ports: ["5432:5432"]
+    healthcheck:
+      {
+        test: ["CMD-SHELL", "pg_isready -U postgres -d app"],
+        interval: 2s,
+        timeout: 3s,
+        retries: 20,
+      }
+  gateway:
+    build: ../gateway
+    depends_on: { postgres: { condition: service_healthy } }
+    environment:
+      PGQUIC_LISTEN: :4433
+      PGQUIC_METRICS_LISTEN: :9090
+      PGQUIC_TLS_CERT: /certs/webtransport.pem
+      PGQUIC_TLS_KEY: /certs/webtransport-key.pem
+      PGQUIC_ALLOWED_ORIGINS: https://localhost:5173
+      PGQUIC_JWT_ENABLED: "false"
+      PGQUIC_ALLOW_NULL_ORIGIN: "true"
+      PGQUIC_UPSTREAM: tcp://postgres:5432
+    ports: ["4433:4433/udp", "9090:9090"]
+    volumes: ["../certs:/certs:ro"]
+  browser:
+    build: { context: .., dockerfile: examples/browser/Dockerfile }
+    depends_on: [gateway]
+    ports: ["5173:5173"]
+    environment:
+      VITE_PGQUIC_CERT_HASH: ${PGQUIC_CERT_HASH:-}
+    volumes: ["../certs:/app/certs:ro"]
+volumes: { pgdata: {} }
