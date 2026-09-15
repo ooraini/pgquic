@@ -9,6 +9,7 @@ const demos = [
   { entry: "index.html", output: "dashboard.html" },
   { entry: "benchmark.html", output: "benchmark.html" },
   { entry: "pg-cron.html", output: "pg-cron.html" },
+  { entry: "commerce.html", output: "commerce.html" },
 ];
 
 await rm(outputRoot, { recursive: true, force: true });

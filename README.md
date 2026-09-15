@@ -23,6 +23,8 @@ Open [https://localhost:5173](https://localhost:5173), click **Run complete demo
 
 Open [https://localhost:5173/pg-cron.html](https://localhost:5173/pg-cron.html) for a complete pg_cron control room. It can create named and anonymous schedules, schedule across databases, edit, pause, resume, and unschedule jobs, inspect or clear run history, cancel a running backend, and inspect the extension settings. The Compose stack builds a PostgreSQL 18 image with the pinned pg_cron extension from source using PGXN Client. Future extension demos can add a pinned PGXN specification or PGXN-compatible source archive to `deploy/postgres/extensions.pgxn`; extension-specific native build or runtime packages still belong in the adjacent Dockerfile.
 
+Open [https://localhost:5173/commerce.html](https://localhost:5173/commerce.html) for the React live-commerce dashboard. UUID-backed orders, products, and customers each publish their row ID on a same-named channel from a database trigger. Three pg_cron jobs continuously create orders, advance fulfillment, and restock inventory; one dedicated listener connection fans those events out to React query hooks.
+
 For portable versions of every demo, build after generating certificates:
 
 ```sh
@@ -32,6 +34,7 @@ npm run build -w examples/browser
 open examples/browser/dist/dashboard.html
 open examples/browser/dist/benchmark.html
 open examples/browser/dist/pg-cron.html
+open examples/browser/dist/commerce.html
 ```
 
 Each output HTML file is built independently and contains its own CSS and JavaScript; there is no shared asset directory or runtime dependency between demos. The dashboards need no HTTP server. They verify secure-context and WebTransport support at startup and provide fields for the gateway URL, optional JWT, and `serverCertificateHashes` value. The gateway must opt in with `PGQUIC_ALLOW_NULL_ORIGIN=true` because a local file has an opaque origin; Chromium currently sends `Origin: file://` for this WebTransport request, while other implementations may serialize it as `null`. This setting is disabled by default and is independent of `PGQUIC_JWT_ENABLED`. Neither opaque spelling is treated as a trusted identity or accepted through `PGQUIC_ALLOWED_ORIGINS`.

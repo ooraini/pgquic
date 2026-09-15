@@ -7,6 +7,7 @@ const artifacts = [
   { file: "dashboard.html", title: /pgquic laboratory/i },
   { file: "benchmark.html", title: /pgquic benchmark/i },
   { file: "pg-cron.html", title: /pg_cron control room/i },
+  { file: "commerce.html", title: /live commerce/i },
 ];
 
 for (const artifact of artifacts) {
@@ -45,4 +46,16 @@ test("pg_cron demo exposes the complete management surface", async ({
     page.getByRole("heading", { name: "Create a job" }),
   ).toBeVisible();
   await expect(page.getByText("schedule_in_database")).toBeVisible();
+});
+
+test("commerce demo exposes its live dashboard surface", async ({ page }) => {
+  await page.goto(pathToFileURL(resolve("dist", "commerce.html")).href);
+  await expect(
+    page.getByRole("heading", { name: "Store pulse" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Recent orders" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Inventory" })).toBeVisible();
+  await expect(page.getByText("Waiting for table events")).toBeVisible();
 });
