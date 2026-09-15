@@ -7,6 +7,7 @@ END
 $$;
 GRANT CONNECT ON DATABASE app TO browser_user;
 CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS postgis;
 GRANT USAGE ON SCHEMA cron TO browser_user;
 GRANT SELECT ON cron.job, cron.job_run_details TO browser_user;
 GRANT DELETE ON cron.job_run_details TO browser_user;
