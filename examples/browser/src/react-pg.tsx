@@ -11,7 +11,7 @@ import {
 import { Pool, PgWebTransport } from "@pgquic/client";
 
 export const channels = ["orders", "products", "customers"] as const;
-export type Channel = (typeof channels)[number];
+export type Channel = (typeof channels)[number] | "vacation_requests";
 export type ConnectionStatus = "connecting" | "live" | "reconnecting" | "error";
 
 type PoolInstance = InstanceType<typeof Pool>;
@@ -25,6 +25,10 @@ export type DatabaseConfig = {
   url: string;
   token: string;
   certificateHash?: string;
+  user?: string;
+  password?: string;
+  database?: string;
+  notificationChannels?: readonly string[];
 };
 
 type Database = {
@@ -89,7 +93,7 @@ export function useConnectionStatus() {
   return useContext(StatusContext);
 }
 
-function useDatabase() {
+export function useDatabase() {
   const database = useContext(DatabaseContext);
   if (!database) throw new Error("PostgreSQL hooks require DatabaseProvider");
   return database;
@@ -189,13 +193,20 @@ function createDatabase(config: DatabaseConfig): Database {
   const pool = new Pool({
     transport,
     max: 8,
-    user: "browser_user",
-    password: "development-only-password",
-    database: "app",
+    user: config.user ?? "browser_user",
+    password: config.password ?? "development-only-password",
+    database: config.database ?? "app",
     ssl: false,
     enableChannelBinding: false,
   } as never) as PoolInstance;
-  return { pool, transport, notifications: new NotificationHub(pool) };
+  return {
+    pool,
+    transport,
+    notifications: new NotificationHub(
+      pool,
+      config.notificationChannels ?? channels,
+    ),
+  };
 }
 
 function decodeHash(encoded: string) {
@@ -208,7 +219,7 @@ function decodeHash(encoded: string) {
 }
 
 class NotificationHub {
-  private listeners = new Map<Channel, Set<Handler>>();
+  private listeners = new Map<string, Set<Handler>>();
   private client: any;
   private starting?: Promise<void>;
   private retry?: number;
@@ -216,7 +227,10 @@ class NotificationHub {
   private closed = false;
   private attempts = 0;
 
-  constructor(private readonly pool: PoolInstance) {}
+  constructor(
+    private readonly pool: PoolInstance,
+    private readonly allowedChannels: readonly string[],
+  ) {}
 
   subscribe(channel: Channel, handler: Handler) {
     const listeners = this.listeners.get(channel) ?? new Set<Handler>();
@@ -254,7 +268,7 @@ class NotificationHub {
         "notification",
         (message: { channel: string; payload?: string }) => {
           if (
-            !channels.includes(message.channel as Channel) ||
+            !this.allowedChannels.includes(message.channel) ||
             !message.payload
           )
             return;
@@ -269,7 +283,12 @@ class NotificationHub {
       );
       client.once("error", (error: Error) => this.disconnected(client, error));
       client.once("end", () => this.disconnected(client));
-      for (const channel of channels) await client.query(`LISTEN ${channel}`);
+      for (const channel of this.allowedChannels) {
+        if (!/^[a-z_][a-z0-9_]*$/.test(channel)) {
+          throw new Error(`Unsafe PostgreSQL notification channel: ${channel}`);
+        }
+        await client.query(`LISTEN ${channel}`);
+      }
       this.keepalive = window.setInterval(() => {
         void client
           .query("select 1")

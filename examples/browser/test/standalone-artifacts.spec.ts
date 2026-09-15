@@ -8,6 +8,7 @@ const artifacts = [
   { file: "benchmark.html", title: /pgquic benchmark/i },
   { file: "pg-cron.html", title: /pg_cron control room/i },
   { file: "commerce.html", title: /live commerce/i },
+  { file: "security.html", title: /leaveboard security/i },
   { file: "cursors.html", title: /shared cursors/i },
 ];
 
@@ -59,6 +60,20 @@ test("commerce demo exposes its live dashboard surface", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Inventory" })).toBeVisible();
   await expect(page.getByText("Waiting for table events")).toBeVisible();
+});
+
+test("security demo exposes PostgreSQL login personas", async ({ page }) => {
+  await page.goto(pathToFileURL(resolve("dist", "security.html")).href);
+  await expect(
+    page.getByRole("heading", { name: "Sign in to Leaveboard" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Row-level security", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Maya/ })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Connect directly to PostgreSQL/ }),
+  ).toBeVisible();
 });
 
 test("shared cursor demo exposes its collaboration surface", async ({

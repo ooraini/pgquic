@@ -25,6 +25,8 @@ Open [https://localhost:5173/pg-cron.html](https://localhost:5173/pg-cron.html) 
 
 Open [https://localhost:5173/commerce.html](https://localhost:5173/commerce.html) for the React live-commerce dashboard. UUID-backed orders, products, and customers each publish their row ID on a same-named channel from a database trigger. Three pg_cron jobs continuously create orders, advance fulfillment, and restock inventory; one dedicated listener connection fans those events out to React query hooks.
 
+Open [https://localhost:5173/security.html](https://localhost:5173/security.html) for Leaveboard, a full-stack vacation approval application whose users authenticate with real PostgreSQL credentials. Employees see only their own requests, a manager sees direct reports and can approve submissions, and an HR auditor has organization-wide read-only access. PostgreSQL roles, row-level security, narrow functions, an append-only audit trail, and `LISTEN/NOTIFY` enforce and synchronize the experience without an application server. The login screen includes four local-only demo personas.
+
 Open [https://localhost:5173/cursors.html](https://localhost:5173/cursors.html) in two or more windows for the shared-cursor canvas. Each window keeps a PostgreSQL `LISTEN` connection open and publishes throttled pointer updates with `pg_notify`; presence heartbeats and stale-client expiry are handled entirely in the browser, with no WebSocket or application server.
 
 For portable versions of every demo, build after generating certificates:
@@ -38,6 +40,7 @@ open examples/browser/dist/benchmark.html
 open examples/browser/dist/pg-cron.html
 open examples/browser/dist/cursors.html
 open examples/browser/dist/commerce.html
+open examples/browser/dist/security.html
 ```
 
 Each output HTML file is built independently and contains its own CSS and JavaScript; there is no shared asset directory or runtime dependency between demos. The dashboards need no HTTP server. They verify secure-context and WebTransport support at startup and provide fields for the gateway URL, optional JWT, and `serverCertificateHashes` value. The gateway must opt in with `PGQUIC_ALLOW_NULL_ORIGIN=true` because a local file has an opaque origin; Chromium currently sends `Origin: file://` for this WebTransport request, while other implementations may serialize it as `null`. This setting is disabled by default and is independent of `PGQUIC_JWT_ENABLED`. Neither opaque spelling is treated as a trusted identity or accepted through `PGQUIC_ALLOWED_ORIGINS`.

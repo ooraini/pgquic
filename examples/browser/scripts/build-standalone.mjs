@@ -10,6 +10,7 @@ const demos = [
   { entry: "benchmark.html", output: "benchmark.html" },
   { entry: "pg-cron.html", output: "pg-cron.html" },
   { entry: "commerce.html", output: "commerce.html" },
+  { entry: "security.html", output: "security.html" },
   { entry: "cursors.html", output: "cursors.html" },
 ];
 
