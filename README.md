@@ -23,6 +23,8 @@ Open [https://localhost:5173](https://localhost:5173), click **Run complete demo
 
 Open [https://localhost:5173/pg-cron.html](https://localhost:5173/pg-cron.html) for a complete pg_cron control room. It can create named and anonymous schedules, schedule across databases, edit, pause, resume, and unschedule jobs, inspect or clear run history, cancel a running backend, and inspect the extension settings. The Compose stack builds a PostgreSQL 18 image with the pinned pg_cron extension from source using PGXN Client. Future extension demos can add a pinned PGXN specification or PGXN-compatible source archive to `deploy/postgres/extensions.pgxn`; extension-specific native build or runtime packages still belong in the adjacent Dockerfile.
 
+Open [https://localhost:5173/pgmq.html](https://localhost:5173/pgmq.html) for the PGMQ queue observatory. It uses PGMQ's native metrics functions, previews the head of every queue without changing visibility, browses all queued messages in message-ID order, archives or permanently deletes individual messages, and inspects archive history with complete JSON bodies and headers. PGMQ v1.12.0 is installed from its checksum-pinned SQL distribution rather than as a compiled extension.
+
 Open [https://localhost:5173/commerce.html](https://localhost:5173/commerce.html) for the React live-commerce dashboard. UUID-backed orders, products, and customers each publish their row ID on a same-named channel from a database trigger. Three pg_cron jobs continuously create orders, advance fulfillment, and restock inventory; one dedicated listener connection fans those events out to React query hooks.
 
 Open [https://localhost:5173/security.html](https://localhost:5173/security.html) for Leaveboard, a full-stack vacation approval application whose users authenticate with real PostgreSQL credentials. Employees see only their own requests, a manager sees direct reports and can approve submissions, and an HR auditor has organization-wide read-only access. PostgreSQL roles, row-level security, narrow functions, an append-only audit trail, and `LISTEN/NOTIFY` enforce and synchronize the experience without an application server. The login screen includes four local-only demo personas.
@@ -39,6 +41,7 @@ open examples/browser/dist/dashboard.html
 open examples/browser/dist/benchmark.html
 open examples/browser/dist/pg-cron.html
 open examples/browser/dist/cursors.html
+open examples/browser/dist/pgmq.html
 open examples/browser/dist/commerce.html
 open examples/browser/dist/security.html
 ```

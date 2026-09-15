@@ -7,6 +7,7 @@ const artifacts = [
   { file: "dashboard.html", title: /pgquic laboratory/i },
   { file: "benchmark.html", title: /pgquic benchmark/i },
   { file: "pg-cron.html", title: /pg_cron control room/i },
+  { file: "pgmq.html", title: /pgmq queue observatory/i },
   { file: "commerce.html", title: /live commerce/i },
   { file: "security.html", title: /leaveboard security/i },
   { file: "cursors.html", title: /shared cursors/i },
@@ -48,6 +49,19 @@ test("pg_cron demo exposes the complete management surface", async ({
     page.getByRole("heading", { name: "Create a job" }),
   ).toBeVisible();
   await expect(page.getByText("schedule_in_database")).toBeVisible();
+});
+
+test("pgmq demo exposes queue metrics, messages, and archives", async ({
+  page,
+}) => {
+  await page.goto(pathToFileURL(resolve("dist", "pgmq.html")).href);
+  await expect(
+    page.getByRole("heading", { name: "Queue observatory" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Queues" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Messages" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Archive" })).toBeVisible();
+  await expect(page.getByText("Body + headers", { exact: true })).toBeVisible();
 });
 
 test("commerce demo exposes its live dashboard surface", async ({ page }) => {

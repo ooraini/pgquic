@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="Inspect PGMQ metrics, queued messages, and archives over pgquic."
+    />
+    <title>PGMQ queue observatory · pgquic</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="PGMQ observatory home">
+        <span class="brand-mark">MQ</span>
+        <span><strong>PGMQ</strong><small>over pgquic</small></span>
+      </a>
+      <div class="connection-pill">
+        <span id="connection-dot" class="status-dot"></span>
+        <span id="connection-status">connecting</span>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">POSTGRES-NATIVE MESSAGE QUEUES</p>
+          <h1>Queue observatory</h1>
+          <p class="lede">
+            See queue pressure, inspect every payload in order, and operate
+            messages without an application server.
+          </p>
+        </div>
+        <div class="hero-actions">
+          <label class="auto-refresh">
+            <input id="auto-refresh" type="checkbox" checked /> Live refresh
+          </label>
+          <button id="refresh" class="primary" type="button">Refresh</button>
+        </div>
+      </section>
+
+      <details id="connection-settings" class="connection-panel">
+        <summary>Connection settings</summary>
+        <form id="connection-form" class="connection-grid">
+          <label>
+            Gateway URL
+            <input
+              id="gateway-url"
+              type="url"
+              value="https://localhost:4433/v1/session"
+              required
+            />
+          </label>
+          <label>
+            JWT <small>optional</small>
+            <input id="jwt" type="password" autocomplete="off" />
+          </label>
+          <label class="wide">
+            Certificate SHA-256 <small>base64; optional when trusted</small>
+            <input id="certificate-hash" type="text" autocomplete="off" />
+          </label>
+          <button class="secondary" type="submit">Reconnect</button>
+        </form>
+        <p id="runtime-note" class="runtime-note"></p>
+      </details>
+
+      <section class="metrics" aria-label="Queue summary">
+        <article><span>Queues</span><strong id="queue-count">—</strong></article>
+        <article><span>Queued</span><strong id="queued-count">—</strong></article>
+        <article><span>Visible now</span><strong id="visible-count">—</strong></article>
+        <article><span>Archived</span><strong id="archive-count">—</strong></article>
+      </section>
+
+      <section class="card queue-card">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">PGMQ.METRICS_ALL()</p>
+            <h2>Queues</h2>
+          </div>
+          <span id="updated-at" class="muted"></span>
+        </div>
+        <div id="queue-grid" class="queue-grid"></div>
+        <div id="queues-empty" class="empty" hidden>No queues found.</div>
+      </section>
+
+      <section class="card messages-card">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">ORDERED BY MESSAGE ID</p>
+            <h2>Messages</h2>
+          </div>
+          <div class="section-meta">
+            <span id="selected-queue" class="queue-chip">Select a queue</span>
+            <span class="read-only">Body + headers</span>
+          </div>
+        </div>
+        <div id="messages-list" class="message-list"></div>
+        <div id="messages-empty" class="empty">
+          Select a queue to inspect its messages.
+        </div>
+      </section>
+
+      <section class="card archive-card">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">PERSISTED HISTORY</p>
+            <h2>Archive</h2>
+          </div>
+          <span class="read-only">Newest first</span>
+        </div>
+        <div id="archive-list" class="message-list archive-list"></div>
+        <div id="archive-empty" class="empty" hidden>
+          No archived messages yet.
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/src/pgmq.ts"></script>
+  </body>
+</html>

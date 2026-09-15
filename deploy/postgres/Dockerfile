@@ -31,3 +31,11 @@ RUN apt-get update \
 
 COPY --from=extension-builder /usr/lib/postgresql/18/ /usr/lib/postgresql/18/
 COPY --from=extension-builder /usr/share/postgresql/18/ /usr/share/postgresql/18/
+
+# PGMQ is deliberately installed from its portable SQL distribution rather
+# than as a compiled PostgreSQL extension. The checksum pins the exact source
+# consumed by fresh database clusters.
+ADD --checksum=sha256:fb58c48626f068d170f37fa012ffbe5aee59ad209e9d3ac742d9dce2f3bb2993 \
+    https://raw.githubusercontent.com/pgmq/pgmq/v1.12.0/pgmq-extension/sql/pgmq.sql \
+    /docker-entrypoint-initdb.d/00-pgmq.sql
+RUN chmod 0644 /docker-entrypoint-initdb.d/00-pgmq.sql
