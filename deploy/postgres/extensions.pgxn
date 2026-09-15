@@ -1,0 +1,3 @@
+# One pinned PGXN package specification or source archive URL per line.
+# pg_cron publishes PGXN-compatible source metadata, but not an indexed package.
+https://github.com/citusdata/pg_cron/archive/refs/tags/v1.6.7.tar.gz

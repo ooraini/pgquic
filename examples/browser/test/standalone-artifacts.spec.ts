@@ -1,0 +1,48 @@
+import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+
+const artifacts = [
+  { file: "dashboard.html", title: /pgquic laboratory/i },
+  { file: "benchmark.html", title: /pgquic benchmark/i },
+  { file: "pg-cron.html", title: /pg_cron control room/i },
+];
+
+for (const artifact of artifacts) {
+  test(`${artifact.file} is a self-contained file artifact`, async ({
+    page,
+  }) => {
+    const path = resolve("dist", artifact.file);
+    const html = readFileSync(path, "utf8");
+    expect(html).not.toMatch(/<script\b[^>]*\bsrc=/i);
+    expect(html).not.toMatch(
+      /<link\b[^>]*\brel="(?:stylesheet|modulepreload)"/i,
+    );
+    expect(html).not.toMatch(/\b(?:src|href)="\/?assets\//i);
+
+    await page.goto(pathToFileURL(path).href);
+    await expect(page).toHaveTitle(artifact.title);
+  });
+}
+
+test("pg_cron demo exposes the complete management surface", async ({
+  page,
+}) => {
+  await page.goto(pathToFileURL(resolve("dist", "pg-cron.html")).href);
+  await expect(
+    page.getByRole("heading", { name: "Control room" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Jobs" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Recent runs" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "pg_cron settings" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "New job" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Create a job" }),
+  ).toBeVisible();
+  await expect(page.getByText("schedule_in_database")).toBeVisible();
+});

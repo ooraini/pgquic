@@ -1,6 +1,16 @@
 services:
   postgres:
-    image: postgres:18-alpine
+    image: pgquic-postgres:local
+    build:
+      context: ./postgres
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_cron
+      - -c
+      - cron.database_name=app
+      - -c
+      - cron.use_background_workers=on
     environment:
       POSTGRES_DB: app
       POSTGRES_USER: postgres
@@ -16,9 +26,28 @@ services:
         timeout: 3s,
         retries: 20,
       }
+  database-init:
+    image: pgquic-postgres:local
+    depends_on: { postgres: { condition: service_healthy } }
+    entrypoint:
+      - psql
+      - -h
+      - postgres
+      - -U
+      - postgres
+      - -d
+      - app
+      - -v
+      - ON_ERROR_STOP=1
+      - -f
+      - /bootstrap/init.sql
+    environment:
+      PGPASSWORD: development-admin-only
+    volumes:
+      - ./postgres/init.sql:/bootstrap/init.sql:ro
   gateway:
     build: ../gateway
-    depends_on: { postgres: { condition: service_healthy } }
+    depends_on: { database-init: { condition: service_completed_successfully } }
     environment:
       PGQUIC_LISTEN: :4433
       PGQUIC_METRICS_LISTEN: :9090

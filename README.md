@@ -21,16 +21,20 @@ docker compose -f deploy/docker-compose.yml up --build
 
 Open [https://localhost:5173](https://localhost:5173), click **Run complete demonstration**, and watch three physical Pool clients share one session. The page also exercises parameterized and prepared queries, independent transactions, LISTEN/NOTIFY, a real PostgreSQL CancelRequest on a temporary stream, a large result workload, and Pool recreation.
 
-For a portable version of the same demo, build after generating certificates and open the self-contained file directly:
+Open [https://localhost:5173/pg-cron.html](https://localhost:5173/pg-cron.html) for a complete pg_cron control room. It can create named and anonymous schedules, schedule across databases, edit, pause, resume, and unschedule jobs, inspect or clear run history, cancel a running backend, and inspect the extension settings. The Compose stack builds a PostgreSQL 18 image with the pinned pg_cron extension from source using PGXN Client. Future extension demos can add a pinned PGXN specification or PGXN-compatible source archive to `deploy/postgres/extensions.pgxn`; extension-specific native build or runtime packages still belong in the adjacent Dockerfile.
+
+For portable versions of every demo, build after generating certificates:
 
 ```sh
 make cert
 npm run build -w packages/client
 npm run build -w examples/browser
 open examples/browser/dist/dashboard.html
+open examples/browser/dist/benchmark.html
+open examples/browser/dist/pg-cron.html
 ```
 
-The dashboard needs no HTTP server. It verifies secure-context and WebTransport support at startup and provides fields for the gateway URL, optional JWT, and `serverCertificateHashes` value. The gateway must opt in with `PGQUIC_ALLOW_NULL_ORIGIN=true` because a local file has an opaque origin; Chromium currently sends `Origin: file://` for this WebTransport request, while other implementations may serialize it as `null`. This setting is disabled by default and is independent of `PGQUIC_JWT_ENABLED`. Neither opaque spelling is treated as a trusted identity or accepted through `PGQUIC_ALLOWED_ORIGINS`.
+Each output HTML file is built independently and contains its own CSS and JavaScript; there is no shared asset directory or runtime dependency between demos. The dashboards need no HTTP server. They verify secure-context and WebTransport support at startup and provide fields for the gateway URL, optional JWT, and `serverCertificateHashes` value. The gateway must opt in with `PGQUIC_ALLOW_NULL_ORIGIN=true` because a local file has an opaque origin; Chromium currently sends `Origin: file://` for this WebTransport request, while other implementations may serialize it as `null`. This setting is disabled by default and is independent of `PGQUIC_JWT_ENABLED`. Neither opaque spelling is treated as a trusted identity or accepted through `PGQUIC_ALLOWED_ORIGINS`.
 
 The checked-in demo credentials (`browser_user` / `development-only-password`) are local-only. The stock PostgreSQL 18 image configuration uses SCRAM-SHA-256 for TCP host connections. Port 5432 is published for convenient local inspection; do not copy that exposure into an Internet-facing deployment. Certificates and private keys are ignored by Git.
 
