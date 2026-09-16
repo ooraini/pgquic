@@ -8,8 +8,8 @@ import {
   usePgNotification,
   type Channel,
   type DatabaseConfig,
-} from "./react-pg";
-import "./commerce.css";
+} from "../shared/react-pg";
+import "./style.css";
 
 type Metrics = {
   revenue: string;
@@ -78,6 +78,8 @@ function Dashboard({
   reconnect: (event: FormEvent) => void;
 }) {
   const status = useConnectionStatus();
+  // Each query declares the channels that invalidate it. PostgreSQL triggers
+  // publish row ids, and the shared hook debounces an authoritative reread.
   const metrics = usePgLiveQuery<Metrics>(
     "metrics",
     `select
@@ -425,6 +427,8 @@ function useActivity() {
   const [activity, setActivity] = useState<Activity[]>([]);
   const receive = (event: Activity) =>
     setActivity((current) => [event, ...current].slice(0, 7));
+  // The same notification stream drives the visible activity feed, making
+  // database-side changes observable without client polling.
   usePgNotification("orders", receive);
   usePgNotification("products", receive);
   usePgNotification("customers", receive);

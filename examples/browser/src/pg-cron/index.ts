@@ -1,5 +1,5 @@
 import { Pool, PgWebTransport } from "@pgquic/client";
-import "./pg-cron.css";
+import "./style.css";
 
 type Job = {
   jobid: string;
@@ -92,6 +92,8 @@ async function refresh() {
   refreshing = true;
   $<HTMLButtonElement>("refresh").disabled = true;
   try {
+    // Independent catalog views are fetched concurrently over separate pool
+    // streams, demonstrating QUIC multiplexing in a realistic dashboard read.
     const [jobResult, runResult, settingResult] = await Promise.all([
       pool.query(`
         select j.jobid::text, j.jobname, j.schedule, j.command,
@@ -302,6 +304,8 @@ async function saveJob(event: SubmitEvent) {
     const username = $<HTMLInputElement>("job-username").value.trim();
     const active = $<HTMLInputElement>("job-active").checked;
 
+    // Every editable value remains a query parameter. Branching only selects
+    // the correct pg_cron function signature.
     if (id) {
       const originalDatabase = $<HTMLInputElement>("original-database").value;
       const originalUsername = $<HTMLInputElement>("original-username").value;
@@ -551,6 +555,7 @@ document
   .querySelector("[data-close]")!
   .addEventListener("click", () => dialog.close());
 $("jobs-body").addEventListener("click", (event) => {
+  // Delegation keeps one handler for rows that are replaced on every refresh.
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
     "button[data-action]",
   );

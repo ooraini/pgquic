@@ -17,6 +17,7 @@ services:
       POSTGRES_PASSWORD: development-admin-only
     volumes:
       - pgdata:/var/lib/postgresql
+      - ./postgres/init:/docker-entrypoint-initdb.d/init:ro
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     ports: ["5432:5432"]
     healthcheck:
@@ -44,7 +45,7 @@ services:
     environment:
       PGPASSWORD: development-admin-only
     volumes:
-      - ./postgres/init.sql:/bootstrap/init.sql:ro
+      - ./postgres:/bootstrap:ro
   gateway:
     build: ../gateway
     depends_on: { database-init: { condition: service_completed_successfully } }

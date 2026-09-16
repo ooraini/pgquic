@@ -8,6 +8,8 @@ async function measure(name: string, fn: () => Promise<void>) {
 }
 async function main() {
   const rows: unknown[] = [];
+  // Pinning lets localhost use a generated certificate without weakening TLS
+  // verification for the rest of the browser session.
   const encoded = import.meta.env.VITE_PGQUIC_CERT_HASH as string | undefined;
   const serverCertificateHashes = encoded
     ? [
@@ -18,6 +20,8 @@ async function main() {
       ]
     : undefined;
   for (const concurrency of [1, 5, 20]) {
+    // A fresh transport per tier keeps connection-establishment measurements
+    // independent and matches the pool size to the advertised concurrency.
     const transport = new PgWebTransport({
       url: "https://localhost:4433/v1/session",
       maxConnections: concurrency,
@@ -32,6 +36,8 @@ async function main() {
       ssl: false,
       enableChannelBinding: false,
     } as any);
+    // Compare parallel multiplexing, serial request latency, and bulk transfer
+    // using the same query protocol and PostgreSQL connection pool.
     rows.push(
       await measure(`${concurrency} connection establishment`, async () => {
         const clients = await Promise.all(

@@ -1,5 +1,5 @@
 import { Pool, PgWebTransport } from "@pgquic/client";
-import "./cursors.css";
+import "./style.css";
 
 type CursorKind = "join" | "move" | "heartbeat" | "leave";
 type CursorMessage = {
@@ -15,6 +15,8 @@ type CursorMessage = {
 type Participant = CursorMessage & { seenAt: number; element: HTMLElement };
 
 const CHANNEL = "pgquic_shared_cursors";
+// Pointer events arrive faster than useful network updates. Coalescing them to
+// 20 Hz keeps the demo responsive without building a NOTIFY backlog.
 const MOVE_INTERVAL_MS = 50;
 const HEARTBEAT_INTERVAL_MS = 8_000;
 const STALE_AFTER_MS = 24_000;
@@ -115,6 +117,8 @@ async function connect() {
       enableChannelBinding: false,
     } as never);
     transport.addEventListener("statechange", renderTransportState);
+    // LISTEN state belongs to one PostgreSQL session, so this pooled client is
+    // deliberately reserved for the lifetime of the presence connection.
     listener = await pool.connect();
     listener.on(
       "notification",
@@ -184,6 +188,8 @@ async function flushPublish() {
   publishing = true;
   lastPublish = performance.now();
   try {
+    // The fixed channel and cursor document are bound values; user-controlled
+    // text is never interpolated into SQL.
     await pool.query("select pg_notify($1, $2)", [
       CHANNEL,
       JSON.stringify(update),
@@ -201,6 +207,8 @@ async function flushPublish() {
 
 function receive(payload: string) {
   try {
+    // NOTIFY payloads are untrusted text. Validate the versioned shape before
+    // allowing a remote participant to affect the DOM.
     const update = JSON.parse(payload) as Partial<CursorMessage>;
     if (!validMessage(update)) return;
     if (update.kind === "leave") {

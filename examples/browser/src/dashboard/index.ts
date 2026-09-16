@@ -11,6 +11,9 @@ const log = (text: string, ok = true) => {
 
 const fileMode = location.protocol === "file:";
 const usableRuntime = window.isSecureContext && "WebTransport" in window;
+
+// The dashboard is also shipped as a single portable HTML file. In file mode
+// the browser uses an opaque origin, so the gateway must explicitly opt in.
 const check = (text: string, ok = true) => {
   const li = document.createElement("li");
   li.textContent = `${ok ? "✓" : "✕"} ${text}`;
@@ -56,6 +59,8 @@ function certificateHashes() {
 }
 
 function create() {
+  // PgWebTransport supplies node-postgres with one logical PostgreSQL stream
+  // per client while reusing the same HTTP/3 connection to the gateway.
   transport = new PgWebTransport({
     url: $<HTMLInputElement>("gateway-url").value.trim(),
     token: () => $<HTMLInputElement>("jwt").value.trim(),
@@ -132,6 +137,9 @@ async function run() {
       throw new Error(
         "WebTransport unavailable: use a current browser with WebTransport and HTTP/3 support.",
       );
+    // These exercises intentionally use the familiar node-postgres API: bound
+    // parameters, pooled transactions, prepared statements, notifications,
+    // cancellation, and a larger result all travel through WebTransport.
     const result = await pool.query(
       "select id, title from posts where id = $1",
       [1],
@@ -159,6 +167,8 @@ async function run() {
       values: [1],
     });
     log("Prepared statement executed");
+    // LISTEN is connection-scoped, so reserve this client until the matching
+    // notification arrives on its PostgreSQL session.
     const listener = await pool.connect();
     await listener.query("listen pgquic_demo");
     const notified = new Promise<void>((resolve) =>
@@ -181,6 +191,8 @@ async function run() {
         ),
     );
     await new Promise((r) => setTimeout(r, 500));
+    // PostgreSQL cancellation is out-of-band: a temporary stream sends the
+    // sleeping backend's process/secret pair.
     const canceller = new Client({
       transport,
       user: "browser_user",

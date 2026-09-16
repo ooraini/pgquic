@@ -1,5 +1,5 @@
 import { Pool, PgWebTransport } from "@pgquic/client";
-import "./pgmq.css";
+import "./style.css";
 
 type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject;
 type JsonObject = { [key: string]: JsonValue };
@@ -92,6 +92,8 @@ async function refresh() {
   refreshing = true;
   $<HTMLButtonElement>("refresh").disabled = true;
   try {
+    // PGMQ metrics are extension APIs; the companion helpers hide dynamic
+    // per-queue table names behind a small, permission-checked surface.
     const [metricResult, headResult, archiveResult] = await Promise.all([
       pool.query("select * from pgmq.metrics_all() order by queue_name"),
       pool.query("select * from public.demo_pgmq_queue_heads()"),
@@ -273,6 +275,8 @@ async function handleMessageAction(button: HTMLButtonElement) {
 
   button.disabled = true;
   try {
+    // Queue names and message ids are passed as values to SECURITY DEFINER
+    // helpers; the browser role never constructs or executes dynamic SQL.
     if (action === "archive") {
       const result = await pool.query(
         "select public.demo_pgmq_archive($1::text, $2::bigint) as changed",

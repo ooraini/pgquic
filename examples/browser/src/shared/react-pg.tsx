@@ -47,6 +47,8 @@ export function DatabaseProvider({
   config: DatabaseConfig;
   children: ReactNode;
 }) {
+  // One provider owns the transport, pool, and notification session; changing
+  // connection settings atomically replaces and cleans up all three.
   const database = useMemo(() => createDatabase(config), [config]);
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
 
@@ -161,6 +163,8 @@ export function usePgLiveQuery<Row>(
   const timerRef = useRef<number | undefined>(undefined);
   refreshRef.current = query.refresh;
 
+  // Debouncing collapses transaction bursts (such as an order plus inventory
+  // update) into one consistent snapshot query.
   const scheduleRefresh = useCallback(() => {
     window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => void refreshRef.current(), 120);
@@ -257,6 +261,8 @@ class NotificationHub {
 
   private async connect() {
     try {
+      // LISTEN is session-local. Reserve one pool client and re-establish every
+      // subscription together whenever that connection is lost.
       const client = await this.pool.connect();
       if (this.closed) {
         client.release();
