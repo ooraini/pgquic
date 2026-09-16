@@ -48,8 +48,8 @@ type Config struct {
 func Load() (Config, error) {
 	c := Config{
 		ListenAddress: env("PGQUIC_LISTEN", ":4433"), MetricsAddress: env("PGQUIC_METRICS_LISTEN", ":9090"),
-		Path: env("PGQUIC_PATH", "/v1/session"), TLSCertFile: env("PGQUIC_TLS_CERT", "certs/localhost.pem"),
-		TLSKeyFile: env("PGQUIC_TLS_KEY", "certs/localhost-key.pem"), JWTEnabled: envBool("PGQUIC_JWT_ENABLED", true),
+		Path: env("PGQUIC_PATH", "/v1/session"), TLSCertFile: env("PGQUIC_TLS_CERT", "certs/webtransport.pem"),
+		TLSKeyFile: env("PGQUIC_TLS_KEY", "certs/webtransport-key.pem"), JWTEnabled: envBool("PGQUIC_JWT_ENABLED", false),
 		JWTSecret: []byte(os.Getenv("PGQUIC_JWT_SECRET")), JWTIssuer: env("PGQUIC_JWT_ISSUER", "pgquic-dev"),
 		JWTAudience: env("PGQUIC_JWT_AUDIENCE", "pgquic"), MaxSessions: envInt("PGQUIC_MAX_SESSIONS", 1000),
 		MaxStreams: envInt("PGQUIC_MAX_STREAMS", 10), MaxPendingStreams: envInt("PGQUIC_MAX_PENDING_STREAMS", 32),
@@ -58,7 +58,7 @@ func Load() (Config, error) {
 		ConnectTimeout: envDuration("PGQUIC_CONNECT_TIMEOUT", 5*time.Second), IdleTimeout: envDuration("PGQUIC_IDLE_TIMEOUT", 5*time.Minute),
 		SessionLifetime: envDuration("PGQUIC_SESSION_LIFETIME", time.Hour), ShutdownTimeout: envDuration("PGQUIC_SHUTDOWN_TIMEOUT", 15*time.Second),
 		RatePerMinute: envInt("PGQUIC_RATE_PER_MINUTE", 120), RateBurst: envInt("PGQUIC_RATE_BURST", 20),
-		DefaultRoute: env("PGQUIC_DEFAULT_ROUTE", "default"), AllowedOrigins: parseSet(env("PGQUIC_ALLOWED_ORIGINS", "https://localhost:5173")),
+		DefaultRoute: env("PGQUIC_DEFAULT_ROUTE", "default"), AllowedOrigins: parseSet(env("PGQUIC_ALLOWED_ORIGINS", "http://localhost:5173")),
 		AllowNullOrigin: envBool("PGQUIC_ALLOW_NULL_ORIGIN", false),
 	}
 	c.Routes = map[string]Route{"default": parseUpstream(env("PGQUIC_UPSTREAM", "tcp://127.0.0.1:5432"))}

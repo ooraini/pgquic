@@ -12,24 +12,24 @@ The gateway is not an SQL API, PostgreSQL authentication implementation, or auth
 
 ## Quick start
 
-Requirements: Docker with Compose, Node 24+ for local package work, Go 1.25+, and [mkcert](https://github.com/FiloSottile/mkcert).
+Requirements: Docker with Compose, OpenSSL, Node 24+ for local package work, and Go 1.25+.
 
 ```sh
 make cert
 docker compose -f deploy/docker-compose.yml up --build
 ```
 
-Open [https://localhost:5173](https://localhost:5173), click **Run complete demonstration**, and watch three physical Pool clients share one session. The page also exercises parameterized and prepared queries, independent transactions, LISTEN/NOTIFY, a real PostgreSQL CancelRequest on a temporary stream, a large result workload, and Pool recreation.
+Open [http://localhost:5173](http://localhost:5173), click **Run complete demonstration**, and watch three physical Pool clients share one session. Localhost is a browser secure context; the generated certificate and its pinned hash secure the WebTransport connection without installing or trusting a local CA. The page also exercises parameterized and prepared queries, independent transactions, LISTEN/NOTIFY, a real PostgreSQL CancelRequest on a temporary stream, a large result workload, and Pool recreation.
 
-Open [https://localhost:5173/pg-cron.html](https://localhost:5173/pg-cron.html) for a complete pg_cron control room. It can create named and anonymous schedules, schedule across databases, edit, pause, resume, and unschedule jobs, inspect or clear run history, cancel a running backend, and inspect the extension settings. The Compose stack builds a PostgreSQL 18 image with the pinned pg_cron extension from source using PGXN Client. Future extension demos can add a pinned PGXN specification or PGXN-compatible source archive to `deploy/postgres/extensions.pgxn`; extension-specific native build or runtime packages still belong in the adjacent Dockerfile.
+Open [http://localhost:5173/pg-cron.html](http://localhost:5173/pg-cron.html) for a complete pg_cron control room. It can create named and anonymous schedules, schedule across databases, edit, pause, resume, and unschedule jobs, inspect or clear run history, cancel a running backend, and inspect the extension settings. The Compose stack builds a PostgreSQL 18 image with the pinned pg_cron extension from source using PGXN Client. Future extension demos can add a pinned PGXN specification or PGXN-compatible source archive to `deploy/postgres/extensions.pgxn`; extension-specific native build or runtime packages still belong in the adjacent Dockerfile.
 
-Open [https://localhost:5173/pgmq.html](https://localhost:5173/pgmq.html) for the PGMQ queue observatory. It uses PGMQ's native metrics functions, previews the head of every queue without changing visibility, browses all queued messages in message-ID order, archives or permanently deletes individual messages, and inspects archive history with complete JSON bodies and headers. PGMQ v1.12.0 is installed from its checksum-pinned SQL distribution rather than as a compiled extension.
+Open [http://localhost:5173/pgmq.html](http://localhost:5173/pgmq.html) for the PGMQ queue observatory. It uses PGMQ's native metrics functions, previews the head of every queue without changing visibility, browses all queued messages in message-ID order, archives or permanently deletes individual messages, and inspects archive history with complete JSON bodies and headers. PGMQ v1.12.0 is installed from its checksum-pinned SQL distribution rather than as a compiled extension.
 
-Open [https://localhost:5173/commerce.html](https://localhost:5173/commerce.html) for the React live-commerce dashboard. UUID-backed orders, products, and customers each publish their row ID on a same-named channel from a database trigger. Three pg_cron jobs continuously create orders, advance fulfillment, and restock inventory; one dedicated listener connection fans those events out to React query hooks.
+Open [http://localhost:5173/commerce.html](http://localhost:5173/commerce.html) for the React live-commerce dashboard. UUID-backed orders, products, and customers each publish their row ID on a same-named channel from a database trigger. Three pg_cron jobs continuously create orders, advance fulfillment, and restock inventory; one dedicated listener connection fans those events out to React query hooks.
 
-Open [https://localhost:5173/security.html](https://localhost:5173/security.html) for Leaveboard, a full-stack vacation approval application whose users authenticate with real PostgreSQL credentials. Employees see only their own requests, a manager sees direct reports and can approve submissions, and an HR auditor has organization-wide read-only access. PostgreSQL roles, row-level security, narrow functions, an append-only audit trail, and `LISTEN/NOTIFY` enforce and synchronize the experience without an application server. The login screen includes four local-only demo personas.
+Open [http://localhost:5173/security.html](http://localhost:5173/security.html) for Leaveboard, a full-stack vacation approval application whose users authenticate with real PostgreSQL credentials. Employees see only their own requests, a manager sees direct reports and can approve submissions, and an HR auditor has organization-wide read-only access. PostgreSQL roles, row-level security, narrow functions, an append-only audit trail, and `LISTEN/NOTIFY` enforce and synchronize the experience without an application server. The login screen includes four local-only demo personas.
 
-Open [https://localhost:5173/cursors.html](https://localhost:5173/cursors.html) in two or more windows for the shared-cursor canvas. Each window keeps a PostgreSQL `LISTEN` connection open and publishes throttled pointer updates with `pg_notify`; presence heartbeats and stale-client expiry are handled entirely in the browser, with no WebSocket or application server.
+Open [http://localhost:5173/cursors.html](http://localhost:5173/cursors.html) in two or more windows for the shared-cursor canvas. Each window keeps a PostgreSQL `LISTEN` connection open and publishes throttled pointer updates with `pg_notify`; presence heartbeats and stale-client expiry are handled entirely in the browser, with no WebSocket or application server.
 
 For portable versions of every demo, build after generating certificates:
 
@@ -88,10 +88,10 @@ The executable reads environment variables. Important defaults are:
 | -------------------------------------------- | ------------------------- |
 | `PGQUIC_LISTEN` / `PGQUIC_PATH`              | `:4433` / `/v1/session`   |
 | `PGQUIC_METRICS_LISTEN`                      | `:9090`                   |
-| `PGQUIC_ALLOWED_ORIGINS`                     | `https://localhost:5173`  |
+| `PGQUIC_ALLOWED_ORIGINS`                     | `http://localhost:5173`   |
 | `PGQUIC_ALLOW_NULL_ORIGIN`                   | `false`                   |
 | `PGQUIC_UPSTREAM`                            | `tcp://127.0.0.1:5432`    |
-| `PGQUIC_JWT_ENABLED`                         | `true`                    |
+| `PGQUIC_JWT_ENABLED`                         | `false`                   |
 | `PGQUIC_MAX_SESSIONS` / `PGQUIC_MAX_STREAMS` | `1000` / `10`             |
 | `PGQUIC_MAX_BUFFERED_BYTES`                  | `262144`                  |
 | control / connect / idle / lifetime timeouts | `5s` / `5s` / `5m` / `1h` |
@@ -114,9 +114,5 @@ cd gateway && go test -bench=. -benchmem ./internal/proxy
 The TypeScript build is strict, browser-first ESM with declarations and source maps. It bundles the pure-JavaScript node-postgres client, pool, `pg-protocol`, and type/result machinery. Browser shims provide Buffer, EventEmitter, next-tick behavior, string handling, and Web Crypto SCRAM; `net`, `tls`, filesystem, pgpass, and pg-native paths are inaccessible. Socket writes use copied buffers, ordered asynchronous writes, high/low watermarks, and a hard queue limit.
 
 Playwright reports an explicit skip reason when a browser runtime lacks WebTransport. Set `PGQUIC_E2E=1` while the Compose stack is running for the real database scenario. See [benchmarking](docs/benchmarks.md), [architecture](docs/architecture.md), [protocol](docs/protocol.md), [security](docs/security.md), and [deployment/certificates](docs/deployment.md).
-
-## Operational caveats
-
-WebTransport requires working UDP/HTTP/3 end to end. Session loss terminates every PostgreSQL connection inside it. PostgreSQL TLS is disabled on the private Docker-network hop in this demo, so SCRAM-SHA-256-PLUS/channel binding is unavailable; ordinary SCRAM-SHA-256 works. Production deployments using TCP must keep that hop on a trusted private network or add an appropriate protected transport design. Direct browser database access demands narrow roles and RLS—never expose owner, superuser, `BYPASSRLS`, migration, or administrative credentials.
 
 Licensed under MIT. Bundled upstream notices are in `packages/client/LICENSES`.

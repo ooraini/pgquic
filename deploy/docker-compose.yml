@@ -54,7 +54,7 @@ services:
       PGQUIC_METRICS_LISTEN: :9090
       PGQUIC_TLS_CERT: /certs/webtransport.pem
       PGQUIC_TLS_KEY: /certs/webtransport-key.pem
-      PGQUIC_ALLOWED_ORIGINS: https://localhost:5173
+      PGQUIC_ALLOWED_ORIGINS: http://localhost:5173
       PGQUIC_JWT_ENABLED: "false"
       PGQUIC_ALLOW_NULL_ORIGIN: "true"
       PGQUIC_UPSTREAM: tcp://postgres:5432

@@ -1,17 +1,8 @@
 #!/bin/sh
 set -eu
 mkdir -p certs
-if command -v mkcert >/dev/null 2>&1; then
-  mkcert -install
-  mkcert -cert-file certs/localhost.pem -key-file certs/localhost-key.pem localhost 127.0.0.1 ::1
-  echo "Created a locally trusted localhost certificate."
-else
-  echo "mkcert is required. Install it from https://github.com/FiloSottile/mkcert" >&2
-  exit 1
-fi
-
-# Certificate-hash mode requires a self-signed certificate valid for no more
-# than 14 days. It is intentionally separate from the HTTPS origin certificate.
+# Certificate-hash mode avoids installing a local CA. Browsers require pinned
+# WebTransport certificates to be valid for no more than 14 days.
 openssl ecparam -name prime256v1 -genkey -noout -out certs/webtransport-key.pem
 openssl req -new -x509 -key certs/webtransport-key.pem -out certs/webtransport.pem \
   -days 10 -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1,IP:::1"
