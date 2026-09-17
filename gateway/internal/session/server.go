@@ -99,7 +99,7 @@ func (s *Server) serveSession(sess *webtransport.Session, origin, remoteIP strin
 	id := randomID()
 	ctx, cancel := context.WithTimeout(sess.Context(), s.cfg.SessionLifetime)
 	defer cancel()
-	defer sess.CloseWithError(0, "session closed")
+	defer func() { _ = sess.CloseWithError(0, "session closed") }()
 	controlCtx, stop := context.WithTimeout(ctx, s.cfg.ControlTimeout)
 	control, err := sess.AcceptStream(controlCtx)
 	stop()

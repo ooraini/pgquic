@@ -10,10 +10,10 @@ import (
 
 func TestBidirectionalProxy(t *testing.T) {
 	upstream, server := net.Pipe()
-	defer server.Close()
+	defer func() { _ = server.Close() }()
 	go func() { _, _ = io.Copy(server, server) }()
 	a, b := net.Pipe()
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	done := make(chan error, 1)
@@ -31,7 +31,7 @@ func TestBidirectionalProxy(t *testing.T) {
 
 func TestUnixSocketFailureIsReturned(t *testing.T) {
 	a, b := net.Pipe()
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 	if err := Run(context.Background(), a, Config{Network: "unix", Address: "/tmp/pgquic-definitely-missing/socket", ConnectTimeout: time.Millisecond, IdleTimeout: time.Second, BufferBytes: 4096}); err == nil {
 		t.Fatal("expected Unix socket connection failure")
 	}

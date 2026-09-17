@@ -26,8 +26,10 @@ func Run(ctx context.Context, stream io.ReadWriteCloser, cfg Config) error {
 	if err != nil {
 		return err
 	}
-	defer upstream.Close()
-	defer stream.Close()
+	defer func() {
+		_ = stream.Close()
+		_ = upstream.Close()
+	}()
 	if cfg.BufferBytes < 4096 {
 		cfg.BufferBytes = 4096
 	}

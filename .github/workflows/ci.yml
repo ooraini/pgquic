@@ -28,15 +28,15 @@ jobs:
       - run: npm run test -w packages/client
       - run: npm run build -w packages/client
       - run: npm run typecheck -w examples/browser
+      - run: make cert
       - run: npm run build -w examples/browser
       - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run test -w examples/browser
-      - run: make cert
       - uses: docker/setup-buildx-action@v4
       - uses: docker/bake-action@v7
         with:
-          source: .
-          files: deploy/docker-compose.yml
+          source: deploy
+          files: docker-compose.yml
           load: true
           set: |
             browser.tags=deploy-browser:latest
