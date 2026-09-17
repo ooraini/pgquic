@@ -1,6 +1,6 @@
 # pgquic
 
-`pgquic` lets browser applications use the familiar node-postgres `Client` and `Pool` APIs over multiplexed WebTransport. One encrypted HTTP/3 session carries many independent, byte-transparent PostgreSQL connections to a Go gateway; the gateway connects only to server-configured PostgreSQL sockets.
+`pgquic` lets browser applications use the node-postgres `Client` and `Pool` APIs over WebTransport. One encrypted HTTP/3 session carries multiple independent PostgreSQL connections to a Go gateway.
 
 ```text
 browser Pool ─ one WebTransport session ─┬─ stream → PostgreSQL socket
@@ -8,47 +8,28 @@ browser Pool ─ one WebTransport session ─┬─ stream → PostgreSQL socket
                                         └─ stream → CancelRequest socket
 ```
 
-The gateway is not an SQL API, PostgreSQL authentication implementation, or authorization boundary. It never parses queries/startup packets and cannot route to an address supplied by a browser.
+The gateway forwards PostgreSQL bytes without parsing them. Browsers cannot choose an upstream address; the gateway connects only to configured PostgreSQL endpoints. PostgreSQL roles, grants, and row-level security remain the authorization boundary.
 
 ## Quick start
 
-Requirements: Docker with Compose, OpenSSL, Node 24+ for local package work, and Go 1.25+.
+Requirements: Docker with Compose and OpenSSL. Package development also requires Node.js 24+ and Go 1.25+.
 
 ```sh
 make cert
 docker compose -f deploy/docker-compose.yml up --build
 ```
 
-Open [http://localhost:5173](http://localhost:5173), click **Run complete demonstration**, and watch three physical Pool clients share one session. Localhost is a browser secure context; the generated certificate and its pinned hash secure the WebTransport connection without installing or trusting a local CA. The page also exercises parameterized and prepared queries, independent transactions, LISTEN/NOTIFY, a real PostgreSQL CancelRequest on a temporary stream, a large result workload, and Pool recreation.
+Open [http://localhost:5173](http://localhost:5173) and run the demonstration.
 
-Open [http://localhost:5173/pg-cron.html](http://localhost:5173/pg-cron.html) for a complete pg_cron control room. It can create named and anonymous schedules, schedule across databases, edit, pause, resume, and unschedule jobs, inspect or clear run history, cancel a running backend, and inspect the extension settings. The Compose stack builds a PostgreSQL 18 image with the pinned pg_cron extension from source using PGXN Client. Future extension demos can add a pinned PGXN specification or PGXN-compatible source archive to `deploy/postgres/extensions.pgxn`; extension-specific native build or runtime packages still belong in the adjacent Dockerfile.
+Additional demos:
 
-Open [http://localhost:5173/pgmq.html](http://localhost:5173/pgmq.html) for the PGMQ queue observatory. It uses PGMQ's native metrics functions, previews the head of every queue without changing visibility, browses all queued messages in message-ID order, archives or permanently deletes individual messages, and inspects archive history with complete JSON bodies and headers. PGMQ v1.12.0 is installed from its checksum-pinned SQL distribution rather than as a compiled extension.
-
-Open [http://localhost:5173/commerce.html](http://localhost:5173/commerce.html) for the React live-commerce dashboard. UUID-backed orders, products, and customers each publish their row ID on a same-named channel from a database trigger. Three pg_cron jobs continuously create orders, advance fulfillment, and restock inventory; one dedicated listener connection fans those events out to React query hooks.
-
-Open [http://localhost:5173/security.html](http://localhost:5173/security.html) for Leaveboard, a full-stack vacation approval application whose users authenticate with real PostgreSQL credentials. Employees see only their own requests, a manager sees direct reports and can approve submissions, and an HR auditor has organization-wide read-only access. PostgreSQL roles, row-level security, narrow functions, an append-only audit trail, and `LISTEN/NOTIFY` enforce and synchronize the experience without an application server. The login screen includes four local-only demo personas.
-
-Open [http://localhost:5173/cursors.html](http://localhost:5173/cursors.html) in two or more windows for the shared-cursor canvas. Each window keeps a PostgreSQL `LISTEN` connection open and publishes throttled pointer updates with `pg_notify`; presence heartbeats and stale-client expiry are handled entirely in the browser, with no WebSocket or application server.
-
-For portable versions of every demo, build after generating certificates:
-
-```sh
-make cert
-npm run build -w packages/client
-npm run build -w examples/browser
-open examples/browser/dist/dashboard.html
-open examples/browser/dist/benchmark.html
-open examples/browser/dist/pg-cron.html
-open examples/browser/dist/cursors.html
-open examples/browser/dist/pgmq.html
-open examples/browser/dist/commerce.html
-open examples/browser/dist/security.html
-```
-
-Each output HTML file is built independently and contains its own CSS and JavaScript; there is no shared asset directory or runtime dependency between demos. The dashboards need no HTTP server. They verify secure-context and WebTransport support at startup and provide fields for the gateway URL, optional JWT, and `serverCertificateHashes` value. The gateway must opt in with `PGQUIC_ALLOW_NULL_ORIGIN=true` because a local file has an opaque origin; Chromium currently sends `Origin: file://` for this WebTransport request, while other implementations may serialize it as `null`. This setting is disabled by default and is independent of `PGQUIC_JWT_ENABLED`. Neither opaque spelling is treated as a trusted identity or accepted through `PGQUIC_ALLOWED_ORIGINS`.
-
-The checked-in demo credentials (`browser_user` / `development-only-password`) are local-only. The stock PostgreSQL 18 image configuration uses SCRAM-SHA-256 for TCP host connections. Port 5432 is published for convenient local inspection; do not copy that exposure into an Internet-facing deployment. Certificates and private keys are ignored by Git.
+| URL                                                  | Demonstrates                                             |
+| ---------------------------------------------------- | -------------------------------------------------------- |
+| [pg-cron.html](http://localhost:5173/pg-cron.html)   | pg_cron scheduling and run history                       |
+| [pgmq.html](http://localhost:5173/pgmq.html)         | PGMQ queues, messages, and archives                      |
+| [commerce.html](http://localhost:5173/commerce.html) | React updates driven by `LISTEN`/`NOTIFY`                |
+| [security.html](http://localhost:5173/security.html) | PostgreSQL authentication, roles, and row-level security |
+| [cursors.html](http://localhost:5173/cursors.html)   | Shared cursors using `LISTEN`/`NOTIFY`                   |
 
 ## Browser API
 
@@ -71,36 +52,40 @@ const pool = new Pool({
   enableChannelBinding: false,
 });
 
-const result = await pool.query("select id, title from posts where id=$1", [
+const result = await pool.query("select id, title from posts where id = $1", [
   123,
 ]);
+
 await pool.end();
 await transport.close();
 ```
 
-`PgWebTransport.state` exposes status, generation, session ID, active physical connections, and total sessions. A dead session fails all of its Clients. A later Pool connection may establish a new generation with exponential backoff and jitter; pgquic never replays a query, transaction, or queued write.
+`PgWebTransport.state` reports the connection status, session generation and ID, active connections, and session count. Session failure closes all member clients. The pool may open a new session for later connections, but `pgquic` never replays PostgreSQL traffic.
 
 ## Gateway configuration
 
-The executable reads environment variables. Important defaults are:
+The gateway reads environment variables. Common settings are:
 
-| Variable                                     | Default                   |
-| -------------------------------------------- | ------------------------- |
-| `PGQUIC_LISTEN` / `PGQUIC_PATH`              | `:4433` / `/v1/session`   |
-| `PGQUIC_METRICS_LISTEN`                      | `:9090`                   |
-| `PGQUIC_ALLOWED_ORIGINS`                     | `http://localhost:5173`   |
-| `PGQUIC_ALLOW_NULL_ORIGIN`                   | `false`                   |
-| `PGQUIC_UPSTREAM`                            | `tcp://127.0.0.1:5432`    |
-| `PGQUIC_JWT_ENABLED`                         | `false`                   |
-| `PGQUIC_MAX_SESSIONS` / `PGQUIC_MAX_STREAMS` | `1000` / `10`             |
-| `PGQUIC_MAX_BUFFERED_BYTES`                  | `262144`                  |
-| control / connect / idle / lifetime timeouts | `5s` / `5s` / `5m` / `1h` |
+| Variable                    | Default                 |
+| --------------------------- | ----------------------- |
+| `PGQUIC_LISTEN`             | `:4433`                 |
+| `PGQUIC_PATH`               | `/v1/session`           |
+| `PGQUIC_METRICS_LISTEN`     | `:9090`                 |
+| `PGQUIC_ALLOWED_ORIGINS`    | `http://localhost:5173` |
+| `PGQUIC_ALLOW_NULL_ORIGIN`  | `false`                 |
+| `PGQUIC_UPSTREAM`           | `tcp://127.0.0.1:5432`  |
+| `PGQUIC_JWT_ENABLED`        | `false`                 |
+| `PGQUIC_MAX_SESSIONS`       | `1000`                  |
+| `PGQUIC_MAX_STREAMS`        | `10`                    |
+| `PGQUIC_MAX_BUFFERED_BYTES` | `262144`                |
 
-JWT mode currently accepts HS256 with a secret of at least 32 bytes and validates algorithm, signature, expiry, issuer, audience, and typed route/database claims. Configure `PGQUIC_ROUTES` as a JSON map such as `{"tenant-a":{"network":"tcp","address":"postgres.internal:5432"}}`; a token's `route` can select only one of those entries. Tokens and credentials never belong in URLs or logs. JWT authentication is independent of origin policy and remains optional when `PGQUIC_JWT_ENABLED=false`, as in the isolated Compose demo. The client protocol never accepts a PostgreSQL URI; upstream destinations always come from gateway configuration.
+JWT mode supports HS256 secrets of at least 32 bytes and validates the signature, algorithm, expiry, issuer, audience, and claim types. `PGQUIC_ROUTES` defines named server-side destinations; a token's `route` claim can select one of them. Tokens and database credentials must not appear in URLs or logs.
 
-Health is at `http://localhost:9090/healthz`; Prometheus metrics are at `/metrics`. Logs are structured JSON and contain connection metadata only.
+Health and Prometheus metrics are served from the metrics listener at `/healthz` and `/metrics`. Logs are structured JSON and exclude PostgreSQL payloads.
 
-## Development and verification
+See [deployment](docs/deployment.md) for certificates, networking, and portable `file://` demos.
+
+## Development
 
 ```sh
 npm install
@@ -108,11 +93,10 @@ make test
 make race
 make build
 make lint
-cd gateway && go test -bench=. -benchmem ./internal/proxy
 ```
 
-The TypeScript build is strict, browser-first ESM with declarations and source maps. It bundles the pure-JavaScript node-postgres client, pool, `pg-protocol`, and type/result machinery. Browser shims provide Buffer, EventEmitter, next-tick behavior, string handling, and Web Crypto SCRAM; `net`, `tls`, filesystem, pgpass, and pg-native paths are inaccessible. Socket writes use copied buffers, ordered asynchronous writes, high/low watermarks, and a hard queue limit.
+Run `make benchmark` with the Compose stack running. Set `PGQUIC_E2E=1` to enable browser tests that require the live gateway and database.
 
-Playwright reports an explicit skip reason when a browser runtime lacks WebTransport. Set `PGQUIC_E2E=1` while the Compose stack is running for the real database scenario. See [benchmarking](docs/benchmarks.md), [architecture](docs/architecture.md), [protocol](docs/protocol.md), [security](docs/security.md), and [deployment/certificates](docs/deployment.md).
+Further reading: [architecture](docs/architecture.md), [protocol](docs/protocol.md), [security](docs/security.md), and [benchmarks](docs/benchmarks.md).
 
-Licensed under MIT. Bundled upstream notices are in `packages/client/LICENSES`.
+Licensed under MIT. Bundled dependency notices are in `packages/client/LICENSES`.
