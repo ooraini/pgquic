@@ -117,5 +117,3 @@ jobs:
           package-manager-cache: false
       - run: npm ci
       - run: npm publish -w packages/client --tag ${{ needs.validate.outputs.npm_tag }} --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
