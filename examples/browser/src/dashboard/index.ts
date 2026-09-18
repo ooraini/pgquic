@@ -1,4 +1,4 @@
-import { Client, Pool, PgWebTransport } from "@pgquic/client";
+import { Client, Pool, PgWebTransport } from "@ooraini/pgquic";
 import "./style.css";
 const $ = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;

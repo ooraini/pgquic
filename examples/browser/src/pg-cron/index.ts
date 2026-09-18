@@ -1,4 +1,4 @@
-import { Pool, PgWebTransport } from "@pgquic/client";
+import { Pool, PgWebTransport } from "@ooraini/pgquic";
 import "./style.css";
 
 type Job = {

@@ -1,6 +1,6 @@
 # pgquic
 
-`pgquic` lets browser applications use the node-postgres `Client` and `Pool` APIs over WebTransport. One encrypted HTTP/3 session carries multiple independent PostgreSQL connections to a Go gateway.
+`pgquic` lets browser applications use familiar PostgreSQL `Client` and `Pool` APIs over WebTransport. One encrypted HTTP/3 session carries multiple independent PostgreSQL connections to a Go gateway.
 
 ```text
 browser Pool ─ one WebTransport session ─┬─ stream → PostgreSQL socket
@@ -34,7 +34,7 @@ Additional demos:
 ## Browser API
 
 ```ts
-import { Pool, PgWebTransport } from "@pgquic/client";
+import { Pool, PgWebTransport } from "@ooraini/pgquic";
 
 const transport = new PgWebTransport({
   url: "https://localhost:4433/v1/session",

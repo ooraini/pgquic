@@ -48,6 +48,7 @@ jobs:
             postgres.cache-from=type=gha,scope=postgres
             postgres.cache-to=type=gha,scope=postgres,mode=max
       - run: docker compose -f deploy/docker-compose.yml up -d --no-build
+      - run: curl --fail --retry 30 --retry-all-errors --retry-delay 1 http://localhost:9090/healthz
       - run: PGQUIC_E2E=1 npm run test -w examples/browser -- --project=chromium
       - if: always()
         run: docker compose -f deploy/docker-compose.yml logs --no-color
@@ -63,6 +64,8 @@ jobs:
         with: { node-version: 24, cache: npm }
       - run: npm ci
       - run: npm audit --omit=dev --audit-level=high
+      - run: npm pack -w packages/client --dry-run
+      - run: git diff --exit-code -- packages/client/LICENSES/THIRD_PARTY_LICENSES.txt
       - run: go install github.com/google/go-licenses@latest
       - run: cd gateway && go-licenses check ./... --allowed_licenses=MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC
       - run: docker compose -f deploy/docker-compose.yml config

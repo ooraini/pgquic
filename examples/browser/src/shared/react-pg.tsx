@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Pool, PgWebTransport } from "@pgquic/client";
+import { Pool, PgWebTransport } from "@ooraini/pgquic";
 
 export const channels = ["orders", "products", "customers"] as const;
 export type Channel = (typeof channels)[number] | "vacation_requests";

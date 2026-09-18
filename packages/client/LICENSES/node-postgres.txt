@@ -1,9 +1,0 @@
-node-postgres
-Copyright (c) 2010-2020 Brian Carlson (brian.m.carlson@gmail.com)
-
-Licensed under the MIT License. The full license text is available at
-https://github.com/brianc/node-postgres/blob/master/LICENSE
-
-@pgquic/client bundles and adapts node-postgres, pg-pool, pg-protocol,
-pg-types, buffer, events, and process. Their copyright and license metadata is
-retained in package-lock.json and in the generated bundle's license comments.

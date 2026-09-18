@@ -1,4 +1,4 @@
-import { Pool, PgWebTransport } from "@pgquic/client";
+import { Pool, PgWebTransport } from "@ooraini/pgquic";
 const now = () => performance.now();
 const result = document.getElementById("result")!;
 async function measure(name: string, fn: () => Promise<void>) {

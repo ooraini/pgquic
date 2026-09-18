@@ -1,9 +1,25 @@
 {
-  "name": "@pgquic/client",
+  "name": "@ooraini/pgquic",
   "version": "0.1.0",
-  "description": "Browser-first node-postgres API over multiplexed WebTransport streams",
+  "description": "PostgreSQL client API for browsers over multiplexed WebTransport",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ooraini/pgquic.git",
+    "directory": "packages/client"
+  },
+  "homepage": "https://github.com/ooraini/pgquic#readme",
+  "bugs": {
+    "url": "https://github.com/ooraini/pgquic/issues"
+  },
+  "keywords": [
+    "postgresql",
+    "browser",
+    "webtransport",
+    "quic"
+  ],
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,9 +30,15 @@
     "dist",
     "LICENSES"
   ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
+    "licenses": "node scripts/generate-licenses.mjs",
+    "prepack": "npm run build && npm run licenses",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src test --max-warnings 0"

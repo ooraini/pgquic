@@ -19,10 +19,10 @@ export interface PgquicPoolConfig extends PoolConfig {
 export class Client extends (BaseClient as any) {
   constructor(config: PgquicClientConfig) {
     if (!config?.transport)
-      throw new Error("@pgquic/client requires a PgWebTransport instance");
+      throw new Error("@ooraini/pgquic requires a PgWebTransport instance");
     if (config.ssl !== false)
       throw new Error(
-        "@pgquic/client requires ssl: false; WebTransport supplies encryption",
+        "@ooraini/pgquic requires ssl: false; WebTransport supplies encryption",
       );
     if (config.enableChannelBinding)
       throw new Error(
