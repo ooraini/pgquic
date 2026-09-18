@@ -1,4 +1,5 @@
 import { Pool, PgWebTransport } from "@ooraini/pgquic";
+import type { PoolClient } from "pg";
 import "./style.css";
 
 type CursorKind = "join" | "move" | "heartbeat" | "leave";
@@ -54,9 +55,7 @@ const encodedHash = import.meta.env.VITE_PGQUIC_CERT_HASH as string | undefined;
 const fileMode = location.protocol === "file:";
 let transport: PgWebTransport | undefined;
 let pool: InstanceType<typeof Pool> | undefined;
-let listener:
-  | Awaited<ReturnType<InstanceType<typeof Pool>["connect"]>>
-  | undefined;
+let listener: PoolClient | undefined;
 let pendingKind: CursorKind | undefined;
 let publishTimer = 0;
 let publishing = false;
@@ -115,7 +114,7 @@ async function connect() {
       database: "app",
       ssl: false,
       enableChannelBinding: false,
-    } as never);
+    });
     transport.addEventListener("statechange", renderTransportState);
     // LISTEN state belongs to one PostgreSQL session, so this pooled client is
     // deliberately reserved for the lifetime of the presence connection.
