@@ -8,3 +8,4 @@
 \ir init/30-pgmq.sql
 \ir init/40-commerce.sql
 \ir init/50-security.sql
+\ir init/60-ops.sql

@@ -11,6 +11,7 @@ const artifacts = [
   { file: "commerce.html", title: /live commerce/i },
   { file: "security.html", title: /leaveboard security/i },
   { file: "cursors.html", title: /shared cursors/i },
+  { file: "postgres-ops.html", title: /postgres operations/i },
 ];
 
 for (const artifact of artifacts) {

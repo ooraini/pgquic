@@ -1,4 +1,4 @@
-.PHONY: all test test-go test-client build lint race demo benchmark cert
+.PHONY: all test test-go test-client build lint race demo benchmark cert cert-hash
 all: test build
 test: test-go test-client
 test-go:
@@ -16,6 +16,9 @@ lint:
 	npm run lint -w packages/client
 cert:
 	./scripts/dev-cert.sh
+cert-hash:
+	openssl x509 -in certs/webtransport.pem -outform DER | openssl dgst -sha256 -binary | openssl base64 -A
+	@printf '\n'
 demo: cert
 	docker compose -f deploy/docker-compose.yml up --build
 benchmark:

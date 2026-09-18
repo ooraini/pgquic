@@ -1,0 +1,1531 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="A single-file PostgreSQL operations dashboard powered by pgquic."
+    />
+    <title>Postgres operations · pgquic</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        color: #172036;
+        background: #f4f6f9;
+        font-synthesis: none;
+        --ink: #172036;
+        --muted: #657087;
+        --faint: #8d96a8;
+        --line: #dde2ea;
+        --panel: #ffffff;
+        --blue: #336791;
+        --blue-dark: #285578;
+        --blue-soft: #edf4fa;
+        --green: #17855b;
+        --green-soft: #eaf7f1;
+        --amber: #a56614;
+        --amber-soft: #fff6e5;
+        --red: #b73f45;
+        --red-soft: #fff0f0;
+        --shadow: 0 1px 2px rgb(20 34 58 / 5%);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        background: #f4f6f9;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.55;
+      }
+
+      .topbar {
+        height: 68px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 0 max(24px, calc((100vw - 1380px) / 2));
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--ink);
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        border-radius: 9px;
+        background: var(--blue);
+        color: white;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+
+      .brand-copy {
+        display: grid;
+        gap: 1px;
+      }
+
+      .brand-copy strong {
+        font-size: 14px;
+      }
+
+      .brand-copy span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--faint);
+        box-shadow: 0 0 0 4px #eef0f4;
+      }
+
+      .status[data-state="connected"] .status-dot {
+        background: var(--green);
+        box-shadow: 0 0 0 4px var(--green-soft);
+      }
+
+      .status[data-state="connecting"] .status-dot {
+        background: #d99426;
+        box-shadow: 0 0 0 4px var(--amber-soft);
+      }
+
+      .status[data-state="error"] .status-dot {
+        background: var(--red);
+        box-shadow: 0 0 0 4px var(--red-soft);
+      }
+
+      main {
+        width: min(1380px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 38px 0 64px;
+      }
+
+      .page-heading,
+      .section-heading,
+      .toolbar,
+      .toolbar-group {
+        display: flex;
+        align-items: center;
+      }
+
+      .page-heading {
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
+      }
+
+      h1,
+      h2,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 7px;
+        font-size: clamp(28px, 4vw, 40px);
+        line-height: 1.1;
+        letter-spacing: -0.035em;
+      }
+
+      .lede {
+        max-width: 680px;
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .toolbar {
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .toolbar-group {
+        gap: 8px;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--panel);
+      }
+
+      .toolbar label {
+        padding-left: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      select,
+      input {
+        min-height: 38px;
+        border: 1px solid #cbd2de;
+        border-radius: 7px;
+        background: white;
+        color: var(--ink);
+        padding: 8px 10px;
+        outline: none;
+      }
+
+      select:focus,
+      input:focus {
+        border-color: var(--blue);
+        box-shadow: 0 0 0 3px rgb(51 103 145 / 12%);
+      }
+
+      .button {
+        min-height: 40px;
+        border: 1px solid #cbd2de;
+        border-radius: 8px;
+        background: white;
+        color: var(--ink);
+        padding: 9px 14px;
+        font-weight: 650;
+      }
+
+      .button:hover {
+        border-color: #aeb8c8;
+        background: #fafbfc;
+      }
+
+      .button.primary {
+        border-color: var(--blue);
+        background: var(--blue);
+        color: white;
+      }
+
+      .button.primary:hover {
+        border-color: var(--blue-dark);
+        background: var(--blue-dark);
+      }
+
+      .button.small {
+        min-height: 30px;
+        padding: 5px 9px;
+        font-size: 12px;
+      }
+
+      .error-banner {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 18px;
+        border: 1px solid #f0c4c6;
+        border-radius: 9px;
+        background: var(--red-soft);
+        color: #7b292e;
+        padding: 14px 16px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .error-banner[hidden] {
+        display: none;
+      }
+
+      .error-banner button {
+        border: 0;
+        background: none;
+        color: inherit;
+        font-size: 18px;
+      }
+
+      .connection-panel {
+        margin-bottom: 18px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .connection-panel summary {
+        padding: 14px 16px;
+        cursor: pointer;
+        color: var(--blue-dark);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .connection-form {
+        display: grid;
+        grid-template-columns: 2fr repeat(4, minmax(120px, 1fr)) auto;
+        gap: 12px;
+        padding: 4px 16px 16px;
+      }
+
+      .connection-form label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .connection-form .certificate {
+        grid-column: span 2;
+      }
+
+      .connection-form .button {
+        align-self: end;
+      }
+
+      .runtime-note {
+        grid-column: 1 / -1;
+        margin: 0;
+        color: var(--faint);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+
+      .metric,
+      .card {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .metric {
+        min-height: 126px;
+        padding: 20px;
+        border-radius: 10px;
+      }
+
+      .metric-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .metric-source,
+      .source {
+        color: var(--faint);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 18px;
+        font-size: 30px;
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+
+      .metric small {
+        display: block;
+        margin-top: 9px;
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(280px, 0.8fr);
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+
+      .card {
+        min-width: 0;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .section-heading {
+        justify-content: space-between;
+        gap: 18px;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .section-heading h2 {
+        margin-bottom: 4px;
+        font-size: 16px;
+        letter-spacing: -0.015em;
+      }
+
+      .section-heading p {
+        margin-bottom: 0;
+      }
+
+      .updated {
+        color: var(--faint);
+        font-size: 11px;
+        white-space: nowrap;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      th {
+        background: #fafbfc;
+        color: var(--muted);
+        padding: 10px 14px;
+        text-align: left;
+        font-size: 10px;
+        font-weight: 750;
+        letter-spacing: 0.045em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      td {
+        max-width: 380px;
+        border-top: 1px solid #edf0f4;
+        padding: 12px 14px;
+        vertical-align: middle;
+      }
+
+      tbody tr:hover {
+        background: #fafbfd;
+      }
+
+      .query-cell {
+        min-width: 250px;
+      }
+
+      .query {
+        display: block;
+        overflow: hidden;
+        color: #354158;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 11px;
+        line-height: 1.45;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .subtle {
+        display: block;
+        margin-top: 3px;
+        color: var(--faint);
+        font-size: 10px;
+      }
+
+      .numeric {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border-radius: 999px;
+        background: #f0f2f5;
+        color: #596478;
+        padding: 4px 8px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: capitalize;
+        white-space: nowrap;
+      }
+
+      .badge.active {
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .badge.waiting,
+      .badge.idle-in-transaction {
+        background: var(--amber-soft);
+        color: var(--amber);
+      }
+
+      .empty {
+        padding: 28px 20px;
+        color: var(--faint);
+        text-align: center;
+        font-size: 12px;
+      }
+
+      .server-details {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0;
+        margin: 0;
+        padding: 6px 20px 14px;
+      }
+
+      .server-details dt,
+      .server-details dd {
+        margin: 0;
+        border-bottom: 1px solid #edf0f4;
+        padding: 12px 0;
+        font-size: 12px;
+      }
+
+      .server-details dt {
+        color: var(--muted);
+      }
+
+      .server-details dd {
+        max-width: 170px;
+        overflow: hidden;
+        color: var(--ink);
+        font-weight: 650;
+        text-align: right;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .states {
+        padding: 16px 20px 20px;
+      }
+
+      .state-row {
+        display: grid;
+        grid-template-columns: 100px 1fr 28px;
+        align-items: center;
+        gap: 10px;
+        margin: 10px 0;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .bar-track {
+        height: 7px;
+        overflow: hidden;
+        border-radius: 99px;
+        background: #edf0f4;
+      }
+
+      .bar {
+        height: 100%;
+        border-radius: inherit;
+        background: var(--blue);
+      }
+
+      .locks-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        padding: 18px 20px 20px;
+      }
+
+      .lock-item {
+        border: 1px solid #e8ebf0;
+        border-radius: 8px;
+        padding: 11px 12px;
+      }
+
+      .lock-item strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 19px;
+      }
+
+      .lock-item span {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .lock-item.waiting {
+        border-color: #f0d4a8;
+        background: var(--amber-soft);
+      }
+
+      dialog {
+        width: min(680px, calc(100% - 32px));
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: white;
+        color: var(--ink);
+        padding: 0;
+        box-shadow: 0 24px 70px rgb(19 32 55 / 24%);
+      }
+
+      dialog::backdrop {
+        background: rgb(22 30 45 / 38%);
+      }
+
+      .dialog-heading {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 20px 22px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .dialog-heading h2 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+
+      .dialog-heading p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .icon-button {
+        width: 30px;
+        height: 30px;
+        border: 0;
+        border-radius: 6px;
+        background: #f2f4f7;
+        color: var(--muted);
+        font-size: 18px;
+      }
+
+      .dialog-body {
+        padding: 20px 22px 22px;
+      }
+
+      .query-detail {
+        margin: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #f7f8fa;
+        color: #2d3a50;
+        padding: 14px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .dialog-meta {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .dialog-meta div {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 11px;
+      }
+
+      .dialog-meta small {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--faint);
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+
+      .dialog-meta strong {
+        font-size: 12px;
+      }
+
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .footer a {
+        color: var(--blue);
+      }
+
+      @media (max-width: 1050px) {
+        .connection-form {
+          grid-template-columns: repeat(3, 1fr);
+        }
+
+        .connection-form .certificate {
+          grid-column: span 1;
+        }
+
+        .metrics {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 700px) {
+        .topbar {
+          padding: 0 18px;
+        }
+
+        main {
+          width: min(100% - 28px, 1380px);
+          padding-top: 26px;
+        }
+
+        .page-heading {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .toolbar {
+          width: 100%;
+          justify-content: flex-start;
+        }
+
+        .connection-form,
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+
+        .connection-form .certificate {
+          grid-column: auto;
+        }
+
+        .metric {
+          min-height: 110px;
+        }
+
+        .dialog-meta {
+          grid-template-columns: 1fr;
+        }
+
+        .footer {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top">
+        <span class="brand-mark">PG</span>
+        <span class="brand-copy">
+          <strong>Postgres operations</strong>
+          <span>via pgquic</span>
+        </span>
+      </a>
+      <div id="connection-status" class="status" data-state="connecting">
+        <span class="status-dot"></span>
+        <span id="connection-label">Loading client…</span>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="page-heading">
+        <div>
+          <h1>Database health</h1>
+          <p class="lede">
+            Live PostgreSQL activity and health from the built-in
+            <code>pg_*</code> monitoring views—queried directly from this page.
+          </p>
+        </div>
+        <div class="toolbar" aria-label="Dashboard controls">
+          <div class="toolbar-group">
+            <label for="refresh-interval">Auto refresh</label>
+            <select id="refresh-interval">
+              <option value="0">Off</option>
+              <option value="5000" selected>5 seconds</option>
+              <option value="15000">15 seconds</option>
+              <option value="30000">30 seconds</option>
+            </select>
+          </div>
+          <button id="refresh" class="button primary" type="button">
+            Refresh now
+          </button>
+        </div>
+      </section>
+
+      <div id="error-banner" class="error-banner" role="alert" hidden>
+        <span id="error-message"></span>
+        <button id="dismiss-error" type="button" aria-label="Dismiss error">
+          ×
+        </button>
+      </div>
+
+      <details id="connection-panel" class="connection-panel">
+        <summary>Connection settings</summary>
+        <form id="connection-form" class="connection-form">
+          <label>
+            Gateway URL
+            <input
+              id="gateway-url"
+              type="url"
+              value="https://localhost:4433/v1/session"
+              required
+            />
+          </label>
+          <label>
+            Database
+            <input id="database" value="app" required />
+          </label>
+          <label>
+            User
+            <input id="user" value="ops_monitor" required />
+          </label>
+          <label>
+            Password
+            <input
+              id="password"
+              type="password"
+              value="development-monitor-only"
+              autocomplete="current-password"
+              required
+            />
+          </label>
+          <label>
+            Gateway JWT <span>optional</span>
+            <input id="jwt" type="password" autocomplete="off" />
+          </label>
+          <label class="certificate">
+            Certificate SHA-256
+            <span
+              >base64; optional when trusted; run
+              <code>make cert-hash</code></span
+            >
+            <input id="certificate-hash" autocomplete="off" />
+          </label>
+          <button class="button" type="submit">Reconnect</button>
+          <p id="runtime-note" class="runtime-note">
+            This page imports @ooraini/pgquic from npm through jsDelivr. Use a
+            current browser with WebTransport and serve over HTTPS (or open the
+            file directly with gateway support for the null origin).
+          </p>
+        </form>
+      </details>
+
+      <section class="metrics" aria-label="Database summary">
+        <article class="metric">
+          <div class="metric-label">
+            Connections <span class="metric-source">pg_stat_database</span>
+          </div>
+          <strong id="connections">—</strong>
+          <small id="connections-note">current database</small>
+        </article>
+        <article class="metric">
+          <div class="metric-label">
+            Cache hit <span class="metric-source">pg_stat_database</span>
+          </div>
+          <strong id="cache-hit">—</strong>
+          <small>shared block reads served from cache</small>
+        </article>
+        <article class="metric">
+          <div class="metric-label">
+            Database size <span class="metric-source">pg_database</span>
+          </div>
+          <strong id="database-size">—</strong>
+          <small id="database-name">current database</small>
+        </article>
+        <article class="metric">
+          <div class="metric-label">
+            Dead tuples <span class="metric-source">pg_stat_user_tables</span>
+          </div>
+          <strong id="dead-tuples">—</strong>
+          <small id="dead-tuple-note">across user tables</small>
+        </article>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <div class="section-heading">
+            <div>
+              <h2>Session activity</h2>
+              <p class="source">pg_stat_activity</p>
+            </div>
+            <span id="activity-updated" class="updated">Not loaded</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>State</th>
+                  <th>User / PID</th>
+                  <th>Duration</th>
+                  <th>Wait</th>
+                  <th>Query</th>
+                  <th><span aria-label="Actions"></span></th>
+                </tr>
+              </thead>
+              <tbody id="activity-body"></tbody>
+            </table>
+          </div>
+          <div id="activity-empty" class="empty" hidden>
+            No other sessions in this database.
+          </div>
+        </article>
+
+        <aside class="card">
+          <div class="section-heading">
+            <div>
+              <h2>Server</h2>
+              <p class="source">pg_settings</p>
+            </div>
+          </div>
+          <dl id="server-details" class="server-details">
+            <dt>Version</dt>
+            <dd id="server-version">—</dd>
+            <dt>Current role</dt>
+            <dd id="current-user">—</dd>
+            <dt>Started</dt>
+            <dd id="server-started">—</dd>
+            <dt>Max connections</dt>
+            <dd id="max-connections">—</dd>
+            <dt>Shared buffers</dt>
+            <dd id="shared-buffers">—</dd>
+            <dt>Track activities</dt>
+            <dd id="track-activities">—</dd>
+          </dl>
+          <div class="section-heading">
+            <div>
+              <h2>Connection states</h2>
+              <p class="source">pg_stat_activity</p>
+            </div>
+          </div>
+          <div id="connection-states" class="states"></div>
+        </aside>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <div class="section-heading">
+            <div>
+              <h2>Table health</h2>
+              <p class="source">pg_stat_user_tables</p>
+            </div>
+            <span class="updated">largest relations first</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Relation</th>
+                  <th>Size</th>
+                  <th>Live rows</th>
+                  <th>Dead rows</th>
+                  <th>Index use</th>
+                  <th>Last autovacuum</th>
+                </tr>
+              </thead>
+              <tbody id="tables-body"></tbody>
+            </table>
+          </div>
+          <div id="tables-empty" class="empty" hidden>
+            No user tables are visible to this role.
+          </div>
+        </article>
+
+        <aside class="card">
+          <div class="section-heading">
+            <div>
+              <h2>Locks</h2>
+              <p class="source">pg_locks</p>
+            </div>
+            <span id="lock-summary" class="updated">—</span>
+          </div>
+          <div id="locks-list" class="locks-list"></div>
+        </aside>
+      </section>
+
+      <footer class="footer">
+        <span>
+          Read-only dashboard · monitoring visibility comes from PostgreSQL's
+          <code>pg_monitor</code> role
+        </span>
+        <span>
+          One HTML file · no install or bundler ·
+          <a href="https://github.com/ooraini/pgquic">pgquic</a>
+        </span>
+      </footer>
+    </main>
+
+    <dialog id="query-dialog">
+      <div class="dialog-heading">
+        <div>
+          <h2>Session details</h2>
+          <p id="dialog-subtitle"></p>
+        </div>
+        <button
+          id="close-dialog"
+          class="icon-button"
+          type="button"
+          aria-label="Close"
+        >
+          ×
+        </button>
+      </div>
+      <div class="dialog-body">
+        <div class="dialog-meta">
+          <div><small>State</small><strong id="dialog-state">—</strong></div>
+          <div>
+            <small>Runtime</small><strong id="dialog-runtime">—</strong>
+          </div>
+          <div>
+            <small>Wait event</small><strong id="dialog-wait">—</strong>
+          </div>
+        </div>
+        <pre id="dialog-query" class="query-detail"></pre>
+      </div>
+    </dialog>
+
+    <script type="module">
+      import {
+        Pool,
+        PgWebTransport,
+      } from "https://cdn.jsdelivr.net/npm/@ooraini/pgquic@0.1.0/dist/index.js";
+
+      const $ = (id) => document.getElementById(id);
+      const number = new Intl.NumberFormat();
+      const percent = new Intl.NumberFormat(undefined, {
+        style: "percent",
+        maximumFractionDigits: 1,
+      });
+      const fileMode = location.protocol === "file:";
+      let pool;
+      let transport;
+      let refreshTimer;
+      let refreshing = false;
+      let activityRows = [];
+
+      function certificateHashes() {
+        const encoded = $("certificate-hash").value.trim();
+        if (!encoded) return undefined;
+        try {
+          const value = Uint8Array.from(atob(encoded), (character) =>
+            character.charCodeAt(0),
+          );
+          if (value.byteLength !== 32) throw new Error("wrong length");
+          return [{ algorithm: "sha-256", value }];
+        } catch {
+          throw new Error(
+            "Certificate SHA-256 must be a 32-byte base64 value.",
+          );
+        }
+      }
+
+      async function connect() {
+        setStatus("connecting", "Connecting…");
+        clearError();
+        stopTimer();
+
+        if (pool) await pool.end().catch(() => undefined);
+        if (transport) await transport.close().catch(() => undefined);
+
+        transport = new PgWebTransport({
+          url: $("gateway-url").value.trim(),
+          token: () => $("jwt").value.trim(),
+          maxConnections: 6,
+          serverCertificateHashes: certificateHashes(),
+        });
+        pool = new Pool({
+          transport,
+          max: 6,
+          user: $("user").value.trim(),
+          password: $("password").value,
+          database: $("database").value.trim(),
+          ssl: false,
+          enableChannelBinding: false,
+          application_name: "pgquic-ops-dashboard",
+        });
+        transport.addEventListener("statechange", () => {
+          if (!transport) return;
+          const state = transport.state.status;
+          if (state === "ready") setStatus("connected", "Connected");
+          if (state === "connecting") setStatus("connecting", "Connecting…");
+          if (state === "backoff") setStatus("connecting", "Retrying…");
+          if (state === "idle") setStatus("idle", "Disconnected");
+          if (state === "closed") setStatus("idle", "Disconnected");
+        });
+
+        await refresh();
+        scheduleRefresh();
+      }
+
+      async function refresh() {
+        if (!pool || refreshing) return;
+        refreshing = true;
+        $("refresh").disabled = true;
+        clearError();
+
+        try {
+          const [overview, databaseStats, activity, tables, locks, settings] =
+            await Promise.all([
+              pool.query(`
+                select current_database() as database_name,
+                       current_user::text as current_user,
+                       current_setting('server_version') as server_version,
+                       pg_postmaster_start_time() as started_at,
+                       pg_database_size(current_database())::bigint as database_bytes,
+                       coalesce((select sum(n_live_tup) from pg_stat_user_tables), 0)::bigint as live_rows,
+                       coalesce((select sum(n_dead_tup) from pg_stat_user_tables), 0)::bigint as dead_rows
+              `),
+              pool.query(`
+                select numbackends::int, xact_commit::bigint, xact_rollback::bigint,
+                       blks_read::bigint, blks_hit::bigint, deadlocks::bigint,
+                       temp_files::bigint, temp_bytes::bigint, stats_reset
+                from pg_stat_database
+                where datname = current_database()
+              `),
+              pool.query(`
+                select pid, usename::text, application_name,
+                       coalesce(client_addr::text, 'local') as client,
+                       coalesce(state, 'unknown') as state,
+                       wait_event_type, wait_event, backend_type,
+                       greatest(0, extract(epoch from (
+                         clock_timestamp() - coalesce(query_start, backend_start)
+                       )))::int as elapsed_seconds,
+                       query_start, left(query, 1000) as query
+                from pg_stat_activity
+                where datname = current_database()
+                  and pid <> pg_backend_pid()
+                order by (state = 'active') desc, query_start asc nulls last
+                limit 40
+              `),
+              pool.query(`
+                select schemaname, relname, seq_scan::bigint, idx_scan::bigint,
+                       n_live_tup::bigint, n_dead_tup::bigint, last_autovacuum,
+                       pg_total_relation_size(relid)::bigint as total_bytes
+                from pg_stat_user_tables
+                order by pg_total_relation_size(relid) desc
+                limit 15
+              `),
+              pool.query(`
+                select mode, granted, count(*)::int as count
+                from pg_locks
+                where database = (select oid from pg_database where datname = current_database())
+                   or database is null
+                group by mode, granted
+                order by granted, count(*) desc, mode
+              `),
+              pool.query(`
+                select name, setting, unit
+                from pg_settings
+                where name in ('max_connections', 'shared_buffers', 'track_activities')
+                order by name
+              `),
+            ]);
+
+          renderOverview(overview.rows[0], databaseStats.rows[0]);
+          renderActivity(activity.rows);
+          renderTables(tables.rows);
+          renderLocks(locks.rows);
+          renderSettings(settings.rows);
+          setStatus("connected", "Connected");
+          $("activity-updated").textContent =
+            `Updated ${formatClock(new Date())}`;
+        } catch (error) {
+          setStatus("error", "Refresh failed");
+          showError(actionableError(error));
+          throw error;
+        } finally {
+          refreshing = false;
+          $("refresh").disabled = false;
+        }
+      }
+
+      function renderOverview(server, stats) {
+        const reads = toNumber(stats?.blks_read);
+        const hits = toNumber(stats?.blks_hit);
+        const cacheRatio = hits + reads ? hits / (hits + reads) : 1;
+        const live = toNumber(server?.live_rows);
+        const dead = toNumber(server?.dead_rows);
+
+        $("connections").textContent = number.format(
+          toNumber(stats?.numbackends),
+        );
+        $("connections-note").textContent = `${number.format(
+          toNumber(stats?.xact_commit) + toNumber(stats?.xact_rollback),
+        )} transactions since stats reset`;
+        $("cache-hit").textContent = percent.format(cacheRatio);
+        $("database-size").textContent = formatBytes(server?.database_bytes);
+        $("database-name").textContent = server?.database_name || "—";
+        $("dead-tuples").textContent = number.format(dead);
+        $("dead-tuple-note").textContent = `${percent.format(
+          live + dead ? dead / (live + dead) : 0,
+        )} of estimated rows`;
+        $("server-version").textContent = server?.server_version || "—";
+        $("current-user").textContent = server?.current_user || "—";
+        $("server-started").textContent = server?.started_at
+          ? relativeTime(server.started_at)
+          : "—";
+      }
+
+      function renderActivity(rows) {
+        activityRows = rows;
+        const body = $("activity-body");
+        body.replaceChildren();
+        $("activity-empty").hidden = rows.length !== 0;
+
+        for (const row of rows) {
+          const tr = document.createElement("tr");
+          tr.append(
+            badgeCell(row.state, Boolean(row.wait_event)),
+            identityCell(row),
+            textCell(formatDuration(row.elapsed_seconds), "numeric"),
+            waitCell(row),
+            queryCell(row.query),
+            inspectCell(row.pid),
+          );
+          body.append(tr);
+        }
+        renderStates(rows);
+      }
+
+      function renderStates(rows) {
+        const counts = new Map();
+        for (const row of rows) {
+          const state = row.state || "unknown";
+          counts.set(state, (counts.get(state) || 0) + 1);
+        }
+        const container = $("connection-states");
+        container.replaceChildren();
+        const max = Math.max(1, ...counts.values());
+        if (!counts.size) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "No other sessions";
+          container.append(empty);
+          return;
+        }
+        for (const [state, count] of [...counts].sort((a, b) => b[1] - a[1])) {
+          const row = document.createElement("div");
+          row.className = "state-row";
+          const label = document.createElement("span");
+          label.textContent = state;
+          const track = document.createElement("span");
+          track.className = "bar-track";
+          const bar = document.createElement("span");
+          bar.className = "bar";
+          bar.style.width = `${(count / max) * 100}%`;
+          track.append(bar);
+          const value = document.createElement("strong");
+          value.textContent = number.format(count);
+          row.append(label, track, value);
+          container.append(row);
+        }
+      }
+
+      function renderTables(rows) {
+        const body = $("tables-body");
+        body.replaceChildren();
+        $("tables-empty").hidden = rows.length !== 0;
+        for (const row of rows) {
+          const scans = toNumber(row.seq_scan) + toNumber(row.idx_scan);
+          const indexRatio = scans ? toNumber(row.idx_scan) / scans : 0;
+          const tr = document.createElement("tr");
+          tr.append(
+            relationCell(row),
+            textCell(formatBytes(row.total_bytes), "numeric"),
+            textCell(number.format(toNumber(row.n_live_tup)), "numeric"),
+            textCell(number.format(toNumber(row.n_dead_tup)), "numeric"),
+            textCell(percent.format(indexRatio), "numeric"),
+            textCell(
+              row.last_autovacuum ? relativeTime(row.last_autovacuum) : "Never",
+            ),
+          );
+          body.append(tr);
+        }
+      }
+
+      function renderLocks(rows) {
+        const list = $("locks-list");
+        list.replaceChildren();
+        const waiting = rows
+          .filter((row) => !row.granted)
+          .reduce((sum, row) => sum + toNumber(row.count), 0);
+        $("lock-summary").textContent = waiting
+          ? `${number.format(waiting)} waiting`
+          : "No waits";
+        if (!rows.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "No locks reported";
+          list.append(empty);
+          return;
+        }
+        for (const row of rows) {
+          const item = document.createElement("div");
+          item.className = `lock-item${row.granted ? "" : " waiting"}`;
+          const count = document.createElement("strong");
+          count.textContent = number.format(toNumber(row.count));
+          const label = document.createElement("span");
+          label.textContent = `${row.mode} · ${row.granted ? "granted" : "waiting"}`;
+          item.append(count, label);
+          list.append(item);
+        }
+      }
+
+      function renderSettings(rows) {
+        const values = Object.fromEntries(
+          rows.map((row) => [row.name, `${row.setting}${row.unit || ""}`]),
+        );
+        $("max-connections").textContent = values.max_connections || "—";
+        $("shared-buffers").textContent = values.shared_buffers || "—";
+        $("track-activities").textContent = values.track_activities || "—";
+      }
+
+      function badgeCell(state, waiting) {
+        const td = document.createElement("td");
+        const badge = document.createElement("span");
+        const slug = state.toLowerCase().replaceAll(" ", "-");
+        badge.className = `badge ${waiting ? "waiting" : slug}`;
+        badge.textContent = state;
+        td.append(badge);
+        return td;
+      }
+
+      function identityCell(row) {
+        const td = document.createElement("td");
+        const user = document.createElement("strong");
+        user.textContent = row.usename || "system";
+        const detail = document.createElement("span");
+        detail.className = "subtle";
+        detail.textContent = `PID ${row.pid} · ${row.client}`;
+        td.append(user, detail);
+        return td;
+      }
+
+      function waitCell(row) {
+        const value = row.wait_event
+          ? `${row.wait_event_type || "wait"} · ${row.wait_event}`
+          : "—";
+        return textCell(value);
+      }
+
+      function queryCell(value) {
+        const td = document.createElement("td");
+        td.className = "query-cell";
+        const code = document.createElement("code");
+        code.className = "query";
+        code.textContent = normalizedQuery(value) || "No query text";
+        code.title = normalizedQuery(value);
+        td.append(code);
+        return td;
+      }
+
+      function inspectCell(pid) {
+        const td = document.createElement("td");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "button small";
+        button.textContent = "Inspect";
+        button.dataset.pid = String(pid);
+        td.append(button);
+        return td;
+      }
+
+      function relationCell(row) {
+        const td = document.createElement("td");
+        const name = document.createElement("strong");
+        name.textContent = row.relname;
+        const schema = document.createElement("span");
+        schema.className = "subtle";
+        schema.textContent = row.schemaname;
+        td.append(name, schema);
+        return td;
+      }
+
+      function textCell(value, className = "") {
+        const td = document.createElement("td");
+        td.className = className;
+        td.textContent = value ?? "—";
+        return td;
+      }
+
+      function inspectSession(pid) {
+        const row = activityRows.find(
+          (item) => String(item.pid) === String(pid),
+        );
+        if (!row) return;
+        $("dialog-subtitle").textContent =
+          `${row.usename || "system"} · PID ${row.pid} · ${row.backend_type}`;
+        $("dialog-state").textContent = row.state;
+        $("dialog-runtime").textContent = formatDuration(row.elapsed_seconds);
+        $("dialog-wait").textContent = row.wait_event || "None";
+        $("dialog-query").textContent =
+          normalizedQuery(row.query) || "No query text";
+        $("query-dialog").showModal();
+      }
+
+      function setStatus(state, label) {
+        $("connection-status").dataset.state = state;
+        $("connection-label").textContent = label;
+      }
+
+      function showError(message) {
+        $("error-message").textContent = message;
+        $("error-banner").hidden = false;
+        $("connection-panel").open = true;
+      }
+
+      function clearError() {
+        $("error-banner").hidden = true;
+        $("error-message").textContent = "";
+      }
+
+      function actionableError(error) {
+        const raw = error instanceof Error ? error.message : String(error);
+        const lower = raw.toLowerCase();
+        if (lower.includes("authentication failed"))
+          return `PostgreSQL authentication failed. Check the database role and password. ${raw}`;
+        if (lower.includes("origin") || lower.includes("403"))
+          return fileMode
+            ? "The gateway rejected this file's null origin. Enable PGQUIC_ALLOW_NULL_ORIGIN only for a gateway intended to accept local files."
+            : "The gateway rejected this page's origin. Add the exact HTTPS origin to PGQUIC_ALLOWED_ORIGINS.";
+        if (lower.includes("certificate") || lower.includes("tls"))
+          return "The gateway certificate was rejected. Trust it locally or paste its base64 SHA-256 hash in Connection settings.";
+        if (lower.includes("webtransport"))
+          return `WebTransport could not connect. Confirm the gateway URL, browser support, certificate, and origin policy. ${raw}`;
+        if (lower.includes("permission") || lower.includes("not allowed"))
+          return `The browser or PostgreSQL role denied access. ${raw}`;
+        return raw;
+      }
+
+      function scheduleRefresh() {
+        stopTimer();
+        const interval = Number($("refresh-interval").value);
+        if (!interval) return;
+        refreshTimer = window.setInterval(() => {
+          refresh().catch(() => undefined);
+        }, interval);
+      }
+
+      function stopTimer() {
+        if (refreshTimer) window.clearInterval(refreshTimer);
+        refreshTimer = undefined;
+      }
+
+      function normalizedQuery(value) {
+        return String(value || "")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function toNumber(value) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+      }
+
+      function formatBytes(value) {
+        let bytes = toNumber(value);
+        if (!bytes) return "0 B";
+        const units = ["B", "KB", "MB", "GB", "TB"];
+        let unit = 0;
+        while (bytes >= 1024 && unit < units.length - 1) {
+          bytes /= 1024;
+          unit += 1;
+        }
+        return `${bytes.toFixed(bytes >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
+      }
+
+      function formatDuration(value) {
+        const seconds = Math.max(0, toNumber(value));
+        if (seconds < 60) return `${seconds}s`;
+        if (seconds < 3600)
+          return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+        const hours = Math.floor(seconds / 3600);
+        return `${hours}h ${Math.floor((seconds % 3600) / 60)}m`;
+      }
+
+      function relativeTime(value) {
+        const date = new Date(value);
+        const seconds = Math.round((Date.now() - date.getTime()) / 1000);
+        if (!Number.isFinite(seconds)) return "—";
+        if (Math.abs(seconds) < 60) return "just now";
+        const formatter = new Intl.RelativeTimeFormat(undefined, {
+          numeric: "auto",
+        });
+        if (Math.abs(seconds) < 3600)
+          return formatter.format(-Math.round(seconds / 60), "minute");
+        if (Math.abs(seconds) < 86400)
+          return formatter.format(-Math.round(seconds / 3600), "hour");
+        return formatter.format(-Math.round(seconds / 86400), "day");
+      }
+
+      function formatClock(value) {
+        return new Intl.DateTimeFormat(undefined, {
+          hour: "numeric",
+          minute: "2-digit",
+          second: "2-digit",
+        }).format(value);
+      }
+
+      $("connection-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        connect().catch((error) => showError(actionableError(error)));
+      });
+      $("refresh").addEventListener("click", () => {
+        refresh().catch(() => undefined);
+      });
+      $("refresh-interval").addEventListener("change", scheduleRefresh);
+      $("dismiss-error").addEventListener("click", clearError);
+      $("activity-body").addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-pid]");
+        if (button) inspectSession(button.dataset.pid);
+      });
+      $("close-dialog").addEventListener("click", () =>
+        $("query-dialog").close(),
+      );
+
+      if (!window.isSecureContext || !("WebTransport" in window)) {
+        setStatus("error", "WebTransport unavailable");
+        showError(
+          "This browser context does not expose WebTransport. Use a current browser and open the file directly or serve it over trusted HTTPS.",
+        );
+      } else {
+        connect().catch((error) => showError(actionableError(error)));
+      }
+    </script>
+  </body>
+</html>

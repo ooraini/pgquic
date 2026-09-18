@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
 
@@ -72,6 +72,12 @@ try {
     }
     await writeFile(`${outputRoot}/${demo.output}`, html);
   }
+
+  // This demo intentionally stays as-authored: its CSS and JavaScript are
+  // inline and the published pgquic module is loaded from npm via jsDelivr.
+  // Copying it into dist keeps it available alongside the bundled demos while
+  // preserving the no-build source file as the actual distributable.
+  await copyFile(`${root}postgres-ops.html`, `${outputRoot}/postgres-ops.html`);
 } finally {
   await rm(temporaryRoot, { recursive: true, force: true });
 }

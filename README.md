@@ -26,13 +26,14 @@ Open [http://localhost:5173](http://localhost:5173) and run the demonstration.
 
 Additional demos:
 
-| URL                                                  | Demonstrates                                             |
-| ---------------------------------------------------- | -------------------------------------------------------- |
-| [pg-cron.html](http://localhost:5173/pg-cron.html)   | pg_cron scheduling and run history                       |
-| [pgmq.html](http://localhost:5173/pgmq.html)         | PGMQ queues, messages, and archives                      |
-| [commerce.html](http://localhost:5173/commerce.html) | React updates driven by `LISTEN`/`NOTIFY`                |
-| [security.html](http://localhost:5173/security.html) | PostgreSQL authentication, roles, and row-level security |
-| [cursors.html](http://localhost:5173/cursors.html)   | Shared cursors using `LISTEN`/`NOTIFY`                   |
+| URL                                                          | Demonstrates                                             |
+| ------------------------------------------------------------ | -------------------------------------------------------- |
+| [pg-cron.html](http://localhost:5173/pg-cron.html)           | pg_cron scheduling and run history                       |
+| [pgmq.html](http://localhost:5173/pgmq.html)                 | PGMQ queues, messages, and archives                      |
+| [commerce.html](http://localhost:5173/commerce.html)         | React updates driven by `LISTEN`/`NOTIFY`                |
+| [security.html](http://localhost:5173/security.html)         | PostgreSQL authentication, roles, and row-level security |
+| [cursors.html](http://localhost:5173/cursors.html)           | Shared cursors using `LISTEN`/`NOTIFY`                   |
+| [postgres-ops.html](http://localhost:5173/postgres-ops.html) | Single-file `pg_*` operations dashboard, loaded from npm |
 
 Run the checks with `make test`, `make race`, `make build`, and `make lint`. Run `make benchmark` with the Compose stack running.
 
