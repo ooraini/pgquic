@@ -1,7 +1,12 @@
 import { Buffer } from "buffer";
 import BaseClient from "pg/lib/client.js";
 import BasePool from "pg-pool";
-import type { ClientConfig, PoolConfig } from "pg";
+import type {
+  Client as PgClient,
+  ClientConfig,
+  Pool as PgPool,
+  PoolConfig,
+} from "pg";
 import { PgWebTransportSocket } from "./socket";
 import { PgWebTransport } from "./transport";
 
@@ -16,6 +21,10 @@ export interface PgquicPoolConfig extends PoolConfig {
   enableChannelBinding?: boolean;
 }
 
+// The runtime classes come from the browser bundle's patched node-postgres
+// internals. Merge their public instance types with the supported `pg` API so
+// consumers retain node-postgres query, event, and pool typings.
+export interface Client extends PgClient {}
 export class Client extends (BaseClient as any) {
   constructor(config: PgquicClientConfig) {
     if (!config?.transport)
@@ -33,6 +42,7 @@ export class Client extends (BaseClient as any) {
   }
 }
 
+export interface Pool extends PgPool {}
 export class Pool extends (BasePool as any) {
   constructor(config: PgquicPoolConfig) {
     super(config, Client);

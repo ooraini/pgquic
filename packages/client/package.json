@@ -35,6 +35,9 @@
     "registry": "https://registry.npmjs.org/"
   },
   "sideEffects": false,
+  "dependencies": {
+    "@types/pg": "8.15.5"
+  },
   "scripts": {
     "build": "tsup",
     "licenses": "node scripts/generate-licenses.mjs",
@@ -49,7 +52,6 @@
     "pg": "8.23.0",
     "pg-pool": "3.14.0",
     "@types/node": "24.3.1",
-    "@types/pg": "8.15.5",
     "@typescript-eslint/eslint-plugin": "8.43.0",
     "@typescript-eslint/parser": "8.43.0",
     "eslint": "9.35.0",
